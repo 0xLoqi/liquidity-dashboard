@@ -1,11 +1,13 @@
 """
 Crypto Liquidity Regime Dashboard
 A local Streamlit app that classifies macro + crypto environment into risk regimes.
+Redesigned for LinkedIn-shareable, educational presentation.
 """
 
 import streamlit as st
 from pathlib import Path
 from datetime import datetime
+import json
 
 # Configure page
 st.set_page_config(
@@ -24,15 +26,88 @@ from scoring.regime import determine_regime, RegimeState
 from scoring.explanations import generate_explanation
 from ui.components import (
     inject_custom_css,
-    render_regime_banner,
+    render_regime_hero,
+    render_five_forces_strip,
+    render_discord_cta,
     render_metric_card,
-    render_data_freshness,
     render_section_header,
     format_large_number,
     format_percentage,
 )
 from ui.charts import create_sparkline, create_score_gauge, create_btc_chart
 from config import CACHE_TTL, REGIME_THRESHOLDS, WEIGHTS
+
+# =============================================================================
+# COPY SYSTEM - Plain English vs Finance Mode
+# =============================================================================
+
+REGIME_TAGLINES = {
+    "aggressive": {
+        "plain": "Conditions are favorable for crypto right now",
+        "finance": "Liquidity conditions favor risk-on positioning",
+    },
+    "balanced": {
+        "plain": "Mixed signals — be selective, don't go all-in",
+        "finance": "Mixed signals suggest selective exposure",
+    },
+    "defensive": {
+        "plain": "Warning signs suggest playing it safe",
+        "finance": "Liquidity headwinds warrant caution",
+    },
+}
+
+REGIME_POSTURES = {
+    "aggressive": {
+        "plain": "Good conditions for investing in crypto",
+        "finance": "Full risk-on appropriate. Consider max exposure to quality assets.",
+    },
+    "balanced": {
+        "plain": "Be picky about what you invest in",
+        "finance": "Neutral posture. Maintain moderate exposure, be selective.",
+    },
+    "defensive": {
+        "plain": "Consider reducing exposure and holding cash",
+        "finance": "Risk-off posture. Reduce exposure, raise cash, avoid leverage.",
+    },
+}
+
+# Metric titles for both modes
+METRIC_TITLES = {
+    "walcl": {"plain": "Fed Money Printing", "finance": "Fed Balance Sheet (WALCL)"},
+    "rrp": {"plain": "Sideline Cash", "finance": "Reverse Repo (RRP)"},
+    "hy_spread": {"plain": "Risk Appetite", "finance": "HY Credit Spreads"},
+    "dxy": {"plain": "Dollar Strength", "finance": "Dollar Index (DXY)"},
+    "stablecoin": {"plain": "Crypto Dry Powder", "finance": "Stablecoin Supply"},
+    "btc_gate": {"plain": "Bitcoin Trend", "finance": "BTC vs 200 DMA (Gate)"},
+}
+
+# "Why it matters" micro-copy for each metric
+METRIC_WHY = {
+    "walcl": {
+        "plain": "When the Fed prints money, crypto tends to go up",
+        "finance": "QE expansion injects liquidity into risk assets",
+    },
+    "rrp": {
+        "plain": "Money leaving the sidelines is looking for returns",
+        "finance": "RRP drawdown releases capital into markets",
+    },
+    "hy_spread": {
+        "plain": "When investors chase risky bonds, they'll chase crypto too",
+        "finance": "Tight spreads indicate risk-seeking behavior",
+    },
+    "dxy": {
+        "plain": "A weaker dollar makes crypto more attractive globally",
+        "finance": "Dollar weakness eases global financial conditions",
+    },
+    "stablecoin": {
+        "plain": "More stablecoins = more money ready to buy crypto",
+        "finance": "Stablecoin growth signals capital inflows to crypto",
+    },
+    "btc_gate": {
+        "plain": "Bitcoin above its 200-day average confirms the uptrend",
+        "finance": "BTC above 200 DMA confirms trend strength",
+    },
+}
 
 # Metric explanations for info tooltips
 METRIC_INFO = {
@@ -77,25 +152,42 @@ METRIC_INFO = {
 # Initialize cache and state file paths
 CACHE = CacheManager()
 STATE_FILE = Path(__file__).parent / "regime_state.json"
+DISCORD_URL = "#"  # Placeholder - replace with actual Discord invite
+
+
+def get_copy(key: str, mode: str, copy_dict: dict) -> str:
+    """Get copy text based on mode (plain/finance)."""
+    return copy_dict.get(key, {}).get(mode, "")
 
 
 def load_data(force_refresh: bool = False):
     """Load data with caching."""
-
     if force_refresh:
         CACHE.invalidate_all()
 
-    # Check cache
     cached_data = CACHE.get("all_data")
     if cached_data:
         return cached_data
 
-    # Fetch fresh data
     with st.spinner("Fetching latest data..."):
         data = fetch_all_data()
         CACHE.set("all_data", data, ttl=min(CACHE_TTL.values()))
 
     return data
+
+
+def get_days_in_regime(state_file: Path) -> tuple:
+    """Get how many days we've been in the current regime."""
+    try:
+        if state_file.exists():
+            with open(state_file, "r") as f:
+                state = json.load(f)
+                days = state.get("days_in_regime", 0)
+                start_date = state.get("regime_start_date", "")
+                return days, start_date
+    except Exception:
+        pass
+    return 0, ""
 
 
 def main():
@@ -104,60 +196,39 @@ def main():
     # Inject custom CSS
     inject_custom_css()
 
-    # Header
-    col1, col2 = st.columns([3, 1])
-    with col1:
+    # ==========================================================================
+    # HEADER WITH PLAIN ENGLISH TOGGLE
+    # ==========================================================================
+    header_col1, header_col2, header_col3 = st.columns([2, 1, 1])
+
+    with header_col1:
         st.markdown("""
-        <h1 style="margin: 0; padding: 24px 0; font-size: 32px; font-weight: 800; color: #f3f4f6;">
-            📊 Liquidity Regime Dashboard
+        <h1 style="margin: 0; padding: 16px 0 4px 0; font-size: 22px; font-weight: 700; color: #E2E8F0; letter-spacing: -0.5px;">
+            Liquidity Regime Dashboard
         </h1>
-        <p style="color: #9ca3af; margin-top: -16px; margin-bottom: 24px;">
-            Macro-driven crypto risk regime classification
-        </p>
         """, unsafe_allow_html=True)
 
-    with col2:
-        st.markdown("<div style='padding-top: 20px;'></div>", unsafe_allow_html=True)
-        if st.button("🔄 Refresh Data", use_container_width=True):
+    with header_col2:
+        plain_english = st.toggle("Plain English", value=True, help="Switch between simple explanations and finance terminology")
+        mode = "plain" if plain_english else "finance"
+
+    with header_col3:
+        if st.button("Refresh Data", use_container_width=True):
             st.cache_data.clear()
             load_data(force_refresh=True)
             st.rerun()
 
-    # About section - collapsible
-    with st.expander("ℹ️ What is this? Why these indicators?"):
-        st.markdown("""
-**The Thesis**: Crypto markets are heavily influenced by global liquidity conditions. When there's abundant cheap money in the system, risk assets (including crypto) tend to perform well. When liquidity tightens, they struggle.
-
-**What we're measuring**:
-- **Fed Balance Sheet** — When the Fed expands its balance sheet, it injects liquidity into the financial system
-- **Reverse Repo (RRP)** — Cash parked here is "on the sidelines." When it drains, that money often flows into markets
-- **High Yield Spreads** — The gap between junk bonds and Treasuries. Tight spreads = investors are risk-seeking
-- **Dollar Index (DXY)** — A strong dollar tightens global financial conditions; weakness is typically bullish for crypto
-- **Stablecoin Supply** — A proxy for capital sitting on crypto's sidelines, ready to deploy
-
-**The Regimes**:
-- 🚀 **Aggressive** — Liquidity tailwinds favor risk-on positioning (requires BTC above 200 DMA as confirmation)
-- ⚖️ **Balanced** — Mixed signals; be selective, avoid overexposure
-- 🛡️ **Defensive** — Liquidity headwinds suggest caution and capital preservation
-
-**Not financial advice.** This is a framework for understanding macro conditions, not a trading signal.
-        """)
-
-    # Check for FRED API key
+    # ==========================================================================
+    # CHECK FOR FRED API KEY
+    # ==========================================================================
     if not has_fred_api_key():
         st.warning("""
-        ⚠️ **FRED API Key Required**
-
-        To get Fed Balance Sheet, Reverse Repo, HY Spreads, and DXY data, you need a free FRED API key:
-
-        1. Get your free key at: https://fred.stlouisfed.org/docs/api/api_key.html
-        2. Set it as an environment variable: `set FRED_API_KEY=your_key_here` (Windows) or `export FRED_API_KEY=your_key_here` (Mac/Linux)
-        3. Restart the app
-
-        Dashboard will run with BTC and Stablecoin data only until FRED key is configured.
+        **FRED API Key Required** — Get a free key at [fred.stlouisfed.org](https://fred.stlouisfed.org/docs/api/api_key.html) and set it as `FRED_API_KEY` environment variable.
         """)
 
-    # Load and process data
+    # ==========================================================================
+    # LOAD DATA
+    # ==========================================================================
     try:
         data = load_data()
         metrics = calculate_metrics(data)
@@ -165,17 +236,28 @@ def main():
         regime, state, regime_info = determine_regime(scores, state_file=STATE_FILE)
         explanation = generate_explanation(regime, scores, metrics, regime_info)
         charts = get_chart_data(data)
+        days_in_regime, regime_start_date = get_days_in_regime(STATE_FILE)
 
     except Exception as e:
         st.error(f"Error loading data: {str(e)}")
         st.info("Make sure you have an internet connection and try refreshing.")
         return
 
-    # Main regime banner
-    render_regime_banner(explanation, regime_info, scores)
+    # ==========================================================================
+    # HERO SECTION - Prominent Regime Display
+    # ==========================================================================
+    render_regime_hero(
+        regime=regime,
+        score=scores["total"],
+        tagline=get_copy(regime, mode, REGIME_TAGLINES),
+        posture=get_copy(regime, mode, REGIME_POSTURES),
+        days_in_regime=days_in_regime,
+        regime_start_date=regime_start_date,
+    )
 
-    # Score gauge
-    st.markdown("<div style='height: 16px'></div>", unsafe_allow_html=True)
+    # ==========================================================================
+    # SCORE GAUGE
+    # ==========================================================================
     gauge = create_score_gauge(
         scores["total"],
         min_val=-6.5,
@@ -184,8 +266,15 @@ def main():
     )
     st.plotly_chart(gauge, use_container_width=True, config={"displayModeBar": False})
 
-    # Metric cards
-    render_section_header("Liquidity Indicators")
+    # ==========================================================================
+    # FIVE FORCES STRIP - At-a-glance indicator summary
+    # ==========================================================================
+    render_five_forces_strip(scores, plain_english=plain_english)
+
+    # ==========================================================================
+    # INDICATOR CARDS - Row 1
+    # ==========================================================================
+    render_section_header("The Five Forces" if plain_english else "Liquidity Indicators")
 
     col1, col2, col3 = st.columns(3)
 
@@ -198,23 +287,22 @@ def main():
             "negative" if walcl_score.get("score", 0) < 0 else "neutral"
         )
 
-        # WALCL is reported in millions
         walcl_value = walcl.get("current")
         if walcl_value:
-            walcl_value = walcl_value * 1e6  # Convert millions to dollars
+            walcl_value = walcl_value * 1e6
 
         render_metric_card(
-            title="Fed Balance Sheet (WALCL)",
+            title=get_copy("walcl", mode, METRIC_TITLES),
             value=format_large_number(walcl_value),
-            delta=format_percentage(delta) if delta else None,
+            delta=format_percentage(delta, plain_english=plain_english) if delta else None,
             delta_direction=direction,
-            reason=walcl_score.get("reason"),
             weight=WEIGHTS["walcl"],
             info=METRIC_INFO.get("walcl"),
+            why=get_copy("walcl", mode, METRIC_WHY),
         )
 
         if "walcl" in charts:
-            chart = create_sparkline(charts["walcl"])
+            chart = create_sparkline(charts["walcl"], height=70)
             st.plotly_chart(chart, use_container_width=True, config={"displayModeBar": False})
 
     # RRP Card
@@ -222,28 +310,26 @@ def main():
         rrp = metrics.get("rrp", {})
         rrp_score = scores["individual"].get("rrp", {})
         delta = rrp.get("delta_4w")
-        # RRP is inverted - decrease is bullish
         direction = "positive" if rrp_score.get("score", 0) > 0 else (
             "negative" if rrp_score.get("score", 0) < 0 else "neutral"
         )
 
-        # RRP is reported in billions
         rrp_value = rrp.get("current")
         if rrp_value:
-            rrp_value = rrp_value * 1e9  # Convert billions to dollars
+            rrp_value = rrp_value * 1e9
 
         render_metric_card(
-            title="Reverse Repo (RRP)",
+            title=get_copy("rrp", mode, METRIC_TITLES),
             value=format_large_number(rrp_value),
-            delta=format_percentage(delta) if delta else None,
+            delta=format_percentage(delta, plain_english=plain_english) if delta else None,
             delta_direction=direction,
-            reason=rrp_score.get("reason"),
             weight=WEIGHTS["rrp"],
             info=METRIC_INFO.get("rrp"),
+            why=get_copy("rrp", mode, METRIC_WHY),
         )
 
         if "rrpontsyd" in charts:
-            chart = create_sparkline(charts["rrpontsyd"])
+            chart = create_sparkline(charts["rrpontsyd"], height=70)
             st.plotly_chart(chart, use_container_width=True, config={"displayModeBar": False})
 
     # HY Spread Card
@@ -251,30 +337,30 @@ def main():
         hy = metrics.get("hy_spread", {})
         hy_score = scores["individual"].get("hy_spread", {})
         delta = hy.get("delta_4w")
-        # HY spread tightening is bullish
         direction = "positive" if hy_score.get("score", 0) > 0 else (
             "negative" if hy_score.get("score", 0) < 0 else "neutral"
         )
 
-        # HY spread is reported as percentage (2.72 = 2.72% = 272 bps)
         current = hy.get("current")
         value_str = f"{current*100:.0f} bps" if current else "N/A"
 
         render_metric_card(
-            title="HY Credit Spreads",
+            title=get_copy("hy_spread", mode, METRIC_TITLES),
             value=value_str,
-            delta=format_percentage(delta) if delta else None,
+            delta=format_percentage(delta, plain_english=plain_english) if delta else None,
             delta_direction=direction,
-            reason=hy_score.get("reason"),
             weight=WEIGHTS["hy_spread"],
             info=METRIC_INFO.get("hy_spread"),
+            why=get_copy("hy_spread", mode, METRIC_WHY),
         )
 
         if "bamlh0a0hym2" in charts:
-            chart = create_sparkline(charts["bamlh0a0hym2"])
+            chart = create_sparkline(charts["bamlh0a0hym2"], height=70)
             st.plotly_chart(chart, use_container_width=True, config={"displayModeBar": False})
 
-    # Second row
+    # ==========================================================================
+    # INDICATOR CARDS - Row 2
+    # ==========================================================================
     col1, col2, col3 = st.columns(3)
 
     # DXY Card
@@ -282,7 +368,6 @@ def main():
         dxy = metrics.get("dxy", {})
         dxy_score = scores["individual"].get("dxy", {})
         delta = dxy.get("delta_4w")
-        # DXY weakening is bullish for crypto
         direction = "positive" if dxy_score.get("score", 0) > 0 else (
             "negative" if dxy_score.get("score", 0) < 0 else "neutral"
         )
@@ -291,17 +376,17 @@ def main():
         value_str = f"{current:.2f}" if current else "N/A"
 
         render_metric_card(
-            title="Dollar Index (DXY)",
+            title=get_copy("dxy", mode, METRIC_TITLES),
             value=value_str,
-            delta=format_percentage(delta) if delta else None,
+            delta=format_percentage(delta, plain_english=plain_english) if delta else None,
             delta_direction=direction,
-            reason=dxy_score.get("reason"),
             weight=WEIGHTS["dxy"],
             info=METRIC_INFO.get("dxy"),
+            why=get_copy("dxy", mode, METRIC_WHY),
         )
 
         if "dtwexbgs" in charts:
-            chart = create_sparkline(charts["dtwexbgs"])
+            chart = create_sparkline(charts["dtwexbgs"], height=70)
             st.plotly_chart(chart, use_container_width=True, config={"displayModeBar": False})
 
     # Stablecoin Card
@@ -314,17 +399,17 @@ def main():
         )
 
         render_metric_card(
-            title="Stablecoin Supply",
+            title=get_copy("stablecoin", mode, METRIC_TITLES),
             value=format_large_number(stable.get("current")),
-            delta=format_percentage(delta) if delta else None,
+            delta=format_percentage(delta, plain_english=plain_english) if delta else None,
             delta_direction=direction,
-            reason=stable_score.get("reason"),
             weight=WEIGHTS["stablecoin"],
             info=METRIC_INFO.get("stablecoin"),
+            why=get_copy("stablecoin", mode, METRIC_WHY),
         )
 
         if "stablecoins" in charts:
-            chart = create_sparkline(charts["stablecoins"], value_col="supply")
+            chart = create_sparkline(charts["stablecoins"], value_col="supply", height=70)
             st.plotly_chart(chart, use_container_width=True, config={"displayModeBar": False})
 
     # BTC Gate Card
@@ -335,120 +420,154 @@ def main():
         above = btc.get("above_200dma", False)
         distance = btc.get("distance_from_200dma")
 
-        status = "✅ Above" if above else "❌ Below"
+        if plain_english:
+            status = "Above trend ✓" if above else "Below trend ✗"
+        else:
+            status = "✅ Above 200 DMA" if above else "❌ Below 200 DMA"
         direction = "positive" if above else "negative"
 
         value_str = f"${current_price:,.0f}" if current_price else "N/A"
 
         render_metric_card(
-            title="BTC vs 200 DMA (Gate)",
+            title=get_copy("btc_gate", mode, METRIC_TITLES),
             value=value_str,
-            delta=f"{status} ({format_percentage(distance)})" if distance else status,
+            delta=f"{status}",
             delta_direction=direction,
-            reason=f"200 DMA: ${ma_200:,.0f}" if ma_200 else None,
             info=METRIC_INFO.get("btc_gate"),
+            why=get_copy("btc_gate", mode, METRIC_WHY),
         )
 
         if "btc" in charts:
-            chart = create_btc_chart(charts["btc"], ma_200=ma_200, height=120)
+            chart = create_btc_chart(charts["btc"], ma_200=ma_200, height=140)
             st.plotly_chart(chart, use_container_width=True, config={"displayModeBar": False})
 
-    # Score breakdown
-    render_section_header("Score Breakdown")
+    # ==========================================================================
+    # DISCORD CTA
+    # ==========================================================================
+    render_discord_cta(discord_url=DISCORD_URL)
 
-    breakdown_col1, breakdown_col2 = st.columns([2, 1])
+    # ==========================================================================
+    # TECHNICAL DETAILS (Collapsible)
+    # ==========================================================================
+    with st.expander("📊 Technical Details & Scoring"):
+        breakdown_col1, breakdown_col2 = st.columns([2, 1])
 
-    with breakdown_col1:
-        # Build the entire table as a single HTML string
-        total_contrib = 0
-        rows_html = ""
+        with breakdown_col1:
+            total_contrib = 0
+            rows_html = ""
 
-        for name, data in scores["individual"].items():
-            score = data.get("score", 0)
-            weight = data.get("weight", 1)
-            weighted = data.get("weighted", 0)
-            total_contrib += weighted
+            for name, data in scores["individual"].items():
+                score = data.get("score", 0)
+                weight = data.get("weight", 1)
+                weighted = data.get("weighted", 0)
+                total_contrib += weighted
 
-            if score > 0:
-                signal_color = "#10B981"
-                signal_icon = "🟢"
-            elif score < 0:
-                signal_color = "#EF4444"
-                signal_icon = "🔴"
-            else:
-                signal_color = "#6B7280"
-                signal_icon = "⚪"
+                if score > 0:
+                    signal_color = "#22C55E"
+                    signal_dot = f'<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:{signal_color};margin-right:8px;"></span>'
+                elif score < 0:
+                    signal_color = "#EF4444"
+                    signal_dot = f'<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:{signal_color};margin-right:8px;"></span>'
+                else:
+                    signal_color = "#64748B"
+                    signal_dot = f'<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:{signal_color};margin-right:8px;opacity:0.5;"></span>'
 
-            # Get metric info for tooltip
-            info = METRIC_INFO.get(name, {})
-            display_name = info.get("name", name.upper().replace("_", " "))
-            tooltip_text = f"{info.get('desc', '')}&#10;&#10;🟢 Bullish: {info.get('bullish', 'N/A')}&#10;🔴 Bearish: {info.get('bearish', 'N/A')}"
+                info = METRIC_INFO.get(name, {})
+                display_name = info.get("name", name.upper().replace("_", " "))
 
-            rows_html += f'''<tr style="border-bottom: 1px solid rgba(55, 65, 81, 0.3);">
-<td style="padding: 12px 8px; color: #f3f4f6;">
-<span class="metric-name-with-info">{display_name}
-<span class="info-icon" title="{tooltip_text}">ⓘ</span>
-</span>
-</td>
-<td style="text-align: center; padding: 12px 8px;">{signal_icon} <span style="color: {signal_color};">{score:+d}</span></td>
-<td style="text-align: center; padding: 12px 8px; color: #9ca3af;">{weight}x</td>
-<td style="text-align: center; padding: 12px 8px; color: {signal_color}; font-weight: 600;">{weighted:+.1f}</td>
+                rows_html += f'''<tr style="border-bottom: 1px solid rgba(71, 85, 105, 0.2);">
+<td style="padding: 14px 12px; color: #E2E8F0; font-size: 13px;">{display_name}</td>
+<td style="text-align: center; padding: 14px 12px; font-family: 'JetBrains Mono', monospace; font-size: 13px;">{signal_dot}<span style="color: {signal_color};">{score:+d}</span></td>
+<td style="text-align: center; padding: 14px 12px; color: #64748B; font-size: 12px;">{weight}x</td>
+<td style="text-align: center; padding: 14px 12px; color: {signal_color}; font-weight: 600; font-family: 'JetBrains Mono', monospace;">{weighted:+.1f}</td>
 </tr>'''
 
-        table_html = f'''<div class="metric-card">
+            table_html = f'''<div class="metric-card" style="padding: 0; overflow: hidden;">
 <table style="width: 100%; border-collapse: collapse;">
-<tr style="border-bottom: 1px solid rgba(99, 102, 241, 0.2);">
-<th style="text-align: left; padding: 12px 8px; color: #9ca3af; font-size: 12px; font-weight: 600;">METRIC</th>
-<th style="text-align: center; padding: 12px 8px; color: #9ca3af; font-size: 12px; font-weight: 600;">SIGNAL</th>
-<th style="text-align: center; padding: 12px 8px; color: #9ca3af; font-size: 12px; font-weight: 600;">WEIGHT</th>
-<th style="text-align: center; padding: 12px 8px; color: #9ca3af; font-size: 12px; font-weight: 600;">CONTRIBUTION</th>
+<tr style="background: rgba(30, 41, 59, 0.5);">
+<th style="text-align: left; padding: 12px; color: #64748B; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Metric</th>
+<th style="text-align: center; padding: 12px; color: #64748B; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Signal</th>
+<th style="text-align: center; padding: 12px; color: #64748B; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Weight</th>
+<th style="text-align: center; padding: 12px; color: #64748B; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Contrib</th>
 </tr>
 {rows_html}
-<tr style="background: rgba(99, 102, 241, 0.1);">
-<td style="padding: 12px 8px; color: #f3f4f6; font-weight: 700;">TOTAL</td>
-<td style="text-align: center; padding: 12px 8px;"></td>
-<td style="text-align: center; padding: 12px 8px;"></td>
-<td style="text-align: center; padding: 12px 8px; color: #6366f1; font-weight: 700; font-size: 18px;">{total_contrib:+.1f}</td>
+<tr style="background: rgba(129, 140, 248, 0.08);">
+<td style="padding: 14px 12px; color: #E2E8F0; font-weight: 600; font-size: 13px;">Total Score</td>
+<td style="text-align: center; padding: 14px 12px;"></td>
+<td style="text-align: center; padding: 14px 12px;"></td>
+<td style="text-align: center; padding: 14px 12px; color: #818CF8; font-weight: 700; font-size: 16px; font-family: 'JetBrains Mono', monospace;">{total_contrib:+.1f}</td>
 </tr>
 </table>
 </div>'''
-        st.markdown(table_html, unsafe_allow_html=True)
+            st.markdown(table_html, unsafe_allow_html=True)
 
-    with breakdown_col2:
-        btc_color = '#10B981' if scores.get('btc_above_200dma') else '#EF4444'
-        btc_status = '✅ Passed' if scores.get('btc_above_200dma') else '❌ Failed'
-        st.markdown(f"""<div class="metric-card">
-<div class="metric-title">Thresholds</div>
-<div style="margin-top: 16px;">
-<div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
-<span style="color: #10B981;">🚀 Aggressive</span>
-<span style="color: #9ca3af;">≥ +4.0 + BTC Gate</span>
+        with breakdown_col2:
+            btc_passed = scores.get('btc_above_200dma')
+            btc_color = '#22C55E' if btc_passed else '#EF4444'
+            btc_status = 'Passed' if btc_passed else 'Failed'
+            btc_dot = f'<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:{btc_color};margin-right:8px;"></span>'
+            st.markdown(f"""<div class="metric-card">
+<div class="metric-title">Regime Thresholds</div>
+<div style="margin-top: 14px; font-size: 13px;">
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding: 8px 10px; background: rgba(34, 197, 94, 0.06); border-radius: 4px;">
+<span style="color: #22C55E; font-weight: 500;">Aggressive</span>
+<span style="color: #64748B; font-family: 'JetBrains Mono', monospace; font-size: 12px;">≥ +4.0</span>
 </div>
-<div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
-<span style="color: #F59E0B;">⚖️ Balanced</span>
-<span style="color: #9ca3af;">-3.9 to +3.9</span>
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding: 8px 10px; background: rgba(251, 191, 36, 0.06); border-radius: 4px;">
+<span style="color: #FBBF24; font-weight: 500;">Balanced</span>
+<span style="color: #64748B; font-family: 'JetBrains Mono', monospace; font-size: 12px;">-3.9 to +3.9</span>
 </div>
-<div style="display: flex; justify-content: space-between;">
-<span style="color: #EF4444;">🛡️ Defensive</span>
-<span style="color: #9ca3af;">≤ -4.0</span>
+<div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: rgba(239, 68, 68, 0.06); border-radius: 4px;">
+<span style="color: #EF4444; font-weight: 500;">Defensive</span>
+<span style="color: #64748B; font-family: 'JetBrains Mono', monospace; font-size: 12px;">≤ -4.0</span>
 </div>
 </div>
-<div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid rgba(99, 102, 241, 0.2);">
-<div class="metric-title">BTC Gate Status</div>
-<div style="margin-top: 8px; color: {btc_color}; font-weight: 600;">{btc_status}</div>
-<div style="color: #6B7280; font-size: 12px; margin-top: 4px;">BTC must be above 200 DMA for Aggressive regime</div>
+<div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid rgba(71, 85, 105, 0.3);">
+<div class="metric-title">BTC Gate</div>
+<div style="margin-top: 10px; display: flex; align-items: center; color: {btc_color}; font-weight: 500; font-size: 14px;">{btc_dot}{btc_status}</div>
+<div style="color: #64748B; font-size: 11px; margin-top: 6px; line-height: 1.4;">Required for Aggressive regime: BTC must trade above 200-day moving average</div>
 </div>
 </div>""", unsafe_allow_html=True)
 
-    # Data freshness
-    cache_stats = CACHE.get_stats()
-    # render_data_freshness(cache_stats)
+    # ==========================================================================
+    # EDUCATIONAL SECTION (Collapsible)
+    # ==========================================================================
+    with st.expander("📚 Learn More: Why These Indicators?"):
+        st.markdown("""
+**The Core Thesis**
 
-    # Footer
+Crypto markets are heavily influenced by global liquidity conditions. When there's abundant cheap money in the system, risk assets (including crypto) tend to perform well. When liquidity tightens, they struggle.
+
+**The Five Forces We Track:**
+
+1. **Fed Balance Sheet** — When the Fed expands its balance sheet, it injects liquidity into the financial system. More money in the system tends to flow into risk assets like crypto.
+
+2. **Reverse Repo (RRP)** — Cash parked here is "on the sidelines." When it drains, that money often flows into markets looking for returns.
+
+3. **High Yield Spreads** — The gap between junk bonds and Treasuries. When investors are willing to buy risky bonds (tight spreads), they're likely to buy crypto too.
+
+4. **Dollar Index (DXY)** — A strong dollar tightens global financial conditions. Dollar weakness is typically bullish for crypto as it makes USD-denominated assets cheaper globally.
+
+5. **Stablecoin Supply** — A proxy for capital sitting on crypto's sidelines. Growing stablecoin supply suggests capital ready to deploy into crypto.
+
+**The Three Regimes:**
+
+- 🚀 **Aggressive** — Multiple indicators are bullish AND Bitcoin is above its 200-day average. Conditions favor risk-taking.
+
+- ⚖️ **Balanced** — Mixed signals. Some indicators bullish, some bearish. Be selective with investments.
+
+- 🛡️ **Defensive** — Multiple indicators are bearish. Consider reducing exposure and preserving capital.
+
+**Not financial advice.** This is a framework for understanding macro conditions, not a trading signal.
+        """)
+
+    # ==========================================================================
+    # FOOTER
+    # ==========================================================================
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
-    st.markdown(f"""<div style="text-align: center; padding: 32px 0; color: #6B7280; font-size: 12px;">
-Data sources: FRED (Federal Reserve) • CoinGecko • DefiLlama<br>
-Auto-refresh: 4 hours • Last updated: {timestamp}
+    st.markdown(f"""<div style="text-align: center; padding: 28px 0; color: #475569; font-size: 11px; border-top: 1px solid rgba(71, 85, 105, 0.2); margin-top: 24px;">
+Sources: FRED (Federal Reserve) • CoinGecko • DefiLlama&nbsp;&nbsp;|&nbsp;&nbsp;Auto-refresh: 4h&nbsp;&nbsp;|&nbsp;&nbsp;Updated: {timestamp}<br>
+<span style="color: #64748B;">Not financial advice. For educational purposes only.</span>
 </div>""", unsafe_allow_html=True)
 
 

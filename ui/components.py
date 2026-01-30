@@ -1,5 +1,6 @@
 """
 Streamlit UI components with polished styling
+Redesigned for LinkedIn-shareable, educational presentation
 """
 
 import streamlit as st
@@ -10,12 +11,16 @@ from config import REGIME_COLORS, REGIME_ICONS
 
 
 def inject_custom_css():
-    """Inject custom CSS for polished styling."""
+    """Inject custom CSS for refined terminal aesthetic with animations."""
     st.markdown("""
     <style>
-        /* Dark theme base */
+        /* Import clean system fonts */
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700;800&display=swap');
+
+        /* Dark theme base - deep slate */
         .stApp {
-            background: linear-gradient(180deg, #0f0f0f 0%, #1a1a2e 100%);
+            background: #0F172A;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
         }
 
         /* Hide default header */
@@ -23,269 +28,393 @@ def inject_custom_css():
             background: transparent;
         }
 
-        /* Metric cards */
-        .metric-card {
-            background: linear-gradient(135deg, rgba(30, 30, 46, 0.8) 0%, rgba(20, 20, 35, 0.9) 100%);
-            border: 1px solid rgba(99, 102, 241, 0.2);
+        /* ===== PULSING ANIMATIONS ===== */
+        @keyframes pulse-aggressive {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.6); }
+            50% { box-shadow: 0 0 0 24px rgba(34, 197, 94, 0); }
+        }
+
+        @keyframes pulse-balanced {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.6); }
+            50% { box-shadow: 0 0 0 24px rgba(251, 191, 36, 0); }
+        }
+
+        @keyframes pulse-defensive {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6); }
+            50% { box-shadow: 0 0 0 24px rgba(239, 68, 68, 0); }
+        }
+
+        @keyframes signal-pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(1.15); }
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ===== HERO SECTION ===== */
+        .hero-section {
+            text-align: center;
+            padding: 48px 24px 36px;
             border-radius: 16px;
+            margin-bottom: 24px;
+            position: relative;
+            animation: fadeInUp 0.5s ease-out;
+        }
+
+        .hero-section.aggressive {
+            background: linear-gradient(180deg, rgba(34, 197, 94, 0.08) 0%, rgba(34, 197, 94, 0.02) 50%, transparent 100%);
+            border: 1px solid rgba(34, 197, 94, 0.2);
+        }
+
+        .hero-section.balanced {
+            background: linear-gradient(180deg, rgba(251, 191, 36, 0.08) 0%, rgba(251, 191, 36, 0.02) 50%, transparent 100%);
+            border: 1px solid rgba(251, 191, 36, 0.2);
+        }
+
+        .hero-section.defensive {
+            background: linear-gradient(180deg, rgba(239, 68, 68, 0.08) 0%, rgba(239, 68, 68, 0.02) 50%, transparent 100%);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .regime-indicator {
+            width: 88px;
+            height: 88px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            margin: 0 auto 20px;
+        }
+
+        .regime-indicator.aggressive {
+            background: rgba(34, 197, 94, 0.15);
+            border: 3px solid #22C55E;
+            animation: pulse-aggressive 2s ease-in-out infinite;
+        }
+
+        .regime-indicator.balanced {
+            background: rgba(251, 191, 36, 0.15);
+            border: 3px solid #FBBF24;
+            animation: pulse-balanced 2.5s ease-in-out infinite;
+        }
+
+        .regime-indicator.defensive {
+            background: rgba(239, 68, 68, 0.15);
+            border: 3px solid #EF4444;
+            animation: pulse-defensive 1.5s ease-in-out infinite;
+        }
+
+        .hero-regime-name {
+            font-size: 52px;
+            font-weight: 800;
+            letter-spacing: -1.5px;
+            margin: 8px 0;
+            line-height: 1.1;
+        }
+
+        .hero-regime-name.aggressive { color: #22C55E; }
+        .hero-regime-name.balanced { color: #FBBF24; }
+        .hero-regime-name.defensive { color: #EF4444; }
+
+        .hero-score {
+            font-size: 20px;
+            font-weight: 600;
+            font-family: 'JetBrains Mono', monospace;
+            color: #94A3B8;
+            margin-bottom: 12px;
+        }
+
+        .hero-tagline {
+            font-size: 18px;
+            color: #CBD5E1;
+            margin: 0 auto 20px;
+            max-width: 500px;
+            line-height: 1.5;
+        }
+
+        .hero-posture {
+            display: inline-block;
+            padding: 12px 20px;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(71, 85, 105, 0.4);
+            border-radius: 8px;
+            font-size: 15px;
+            color: #E2E8F0;
+            font-weight: 500;
+        }
+
+        .hero-duration {
+            margin-top: 16px;
+            font-size: 13px;
+            color: #64748B;
+        }
+
+        /* ===== FIVE FORCES STRIP ===== */
+        .forces-strip {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            padding: 20px 16px;
+            margin-bottom: 20px;
+            background: rgba(30, 41, 59, 0.3);
+            border-radius: 12px;
+            border: 1px solid rgba(71, 85, 105, 0.2);
+        }
+
+        .force-pill {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(71, 85, 105, 0.3);
+            border-radius: 24px;
+            font-size: 13px;
+            color: #E2E8F0;
+            font-weight: 500;
+            transition: border-color 0.2s;
+        }
+
+        .force-pill:hover {
+            border-color: rgba(129, 140, 248, 0.4);
+        }
+
+        .signal-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            flex-shrink: 0;
+        }
+
+        .signal-dot.bullish {
+            background: #22C55E;
+            animation: signal-pulse 2s ease-in-out infinite;
+        }
+
+        .signal-dot.bearish {
+            background: #EF4444;
+            animation: signal-pulse 2s ease-in-out infinite;
+        }
+
+        .signal-dot.neutral {
+            background: #64748B;
+            opacity: 0.6;
+        }
+
+        /* ===== METRIC CARDS ===== */
+        .metric-card {
+            background: rgba(30, 41, 59, 0.5);
+            border: 1px solid rgba(71, 85, 105, 0.3);
+            border-radius: 12px;
             padding: 20px;
             margin: 8px 0;
-            backdrop-filter: blur(10px);
-            transition: all 0.3s ease;
+            transition: border-color 0.2s ease;
+            animation: fadeInUp 0.4s ease-out;
         }
 
         .metric-card:hover {
-            border-color: rgba(99, 102, 241, 0.5);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(99, 102, 241, 0.15);
+            border-color: rgba(129, 140, 248, 0.4);
         }
 
         .metric-card.bullish {
-            border-color: rgba(16, 185, 129, 0.4);
+            border-left: 3px solid #22C55E;
         }
 
         .metric-card.bearish {
-            border-color: rgba(239, 68, 68, 0.4);
+            border-left: 3px solid #EF4444;
         }
 
         .metric-title {
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 600;
-            color: #9ca3af;
+            color: #64748B;
             text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 8px;
-        }
-
-        .metric-value {
-            font-size: 28px;
-            font-weight: 700;
-            color: #f3f4f6;
+            letter-spacing: 0.5px;
             margin-bottom: 4px;
         }
 
+        .metric-why {
+            font-size: 13px;
+            color: #94A3B8;
+            margin-bottom: 12px;
+            font-style: italic;
+        }
+
+        .metric-value {
+            font-size: 26px;
+            font-weight: 600;
+            color: #E2E8F0;
+            margin-bottom: 6px;
+            font-family: 'JetBrains Mono', monospace;
+            letter-spacing: -0.5px;
+        }
+
         .metric-delta {
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 500;
-            padding: 4px 10px;
-            border-radius: 20px;
+            padding: 3px 10px;
+            border-radius: 4px;
             display: inline-block;
+            font-family: 'JetBrains Mono', monospace;
         }
 
         .metric-delta.positive {
-            background: rgba(16, 185, 129, 0.15);
-            color: #10B981;
+            background: rgba(34, 197, 94, 0.12);
+            color: #22C55E;
         }
 
         .metric-delta.negative {
-            background: rgba(239, 68, 68, 0.15);
+            background: rgba(239, 68, 68, 0.12);
             color: #EF4444;
         }
 
         .metric-delta.neutral {
-            background: rgba(107, 114, 128, 0.15);
-            color: #9ca3af;
+            background: rgba(100, 116, 139, 0.12);
+            color: #94A3B8;
         }
 
-        /* Regime banner */
-        .regime-banner {
-            padding: 32px;
-            border-radius: 20px;
-            margin-bottom: 24px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .regime-banner::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, transparent 50%);
-            pointer-events: none;
-        }
-
-        .regime-banner.aggressive {
-            background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(16, 185, 129, 0.05) 100%);
-            border: 2px solid rgba(16, 185, 129, 0.4);
-        }
-
-        .regime-banner.balanced {
-            background: linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(245, 158, 11, 0.05) 100%);
-            border: 2px solid rgba(245, 158, 11, 0.4);
-        }
-
-        .regime-banner.defensive {
-            background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(239, 68, 68, 0.05) 100%);
-            border: 2px solid rgba(239, 68, 68, 0.4);
-        }
-
-        .regime-title {
-            font-size: 14px;
-            font-weight: 600;
-            color: #9ca3af;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            margin-bottom: 8px;
-        }
-
-        .regime-name {
-            font-size: 48px;
-            font-weight: 800;
-            margin-bottom: 16px;
+        /* ===== DISCORD CTA ===== */
+        .discord-cta {
             display: flex;
             align-items: center;
             gap: 16px;
-        }
-
-        .regime-name.aggressive { color: #10B981; }
-        .regime-name.balanced { color: #F59E0B; }
-        .regime-name.defensive { color: #EF4444; }
-
-        .regime-body {
-            font-size: 16px;
-            color: #d1d5db;
-            line-height: 1.6;
-            max-width: 800px;
-        }
-
-        .regime-posture {
-            font-size: 18px;
-            font-weight: 600;
-            color: #f3f4f6;
-            margin-top: 16px;
-            padding: 12px 20px;
-            background: rgba(0,0,0,0.2);
-            border-radius: 10px;
-            display: inline-block;
-        }
-
-        /* Score indicator */
-        .score-badge {
-            position: absolute;
-            top: 24px;
-            right: 24px;
-            background: rgba(0,0,0,0.3);
-            padding: 12px 20px;
+            padding: 20px 24px;
+            background: linear-gradient(135deg, rgba(88, 101, 242, 0.1) 0%, rgba(88, 101, 242, 0.05) 100%);
+            border: 1px solid rgba(88, 101, 242, 0.25);
             border-radius: 12px;
-            text-align: center;
+            margin: 24px 0;
         }
 
-        .score-label {
-            font-size: 11px;
-            color: #9ca3af;
+        .discord-cta-icon {
+            font-size: 32px;
+        }
+
+        .discord-cta-text {
+            flex: 1;
+        }
+
+        .discord-cta-text h4 {
+            margin: 0 0 4px 0;
+            font-size: 16px;
+            font-weight: 600;
+            color: #E2E8F0;
+        }
+
+        .discord-cta-text p {
+            margin: 0;
+            font-size: 13px;
+            color: #94A3B8;
+        }
+
+        .discord-cta-button {
+            padding: 10px 20px;
+            background: #5865F2;
+            border: none;
+            border-radius: 6px;
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background 0.2s;
+        }
+
+        .discord-cta-button:hover {
+            background: #4752C4;
+        }
+
+        /* ===== SECTION HEADERS ===== */
+        .section-header {
+            font-size: 13px;
+            font-weight: 600;
+            color: #64748B;
             text-transform: uppercase;
             letter-spacing: 1px;
-        }
-
-        .score-value {
-            font-size: 32px;
-            font-weight: 700;
-            color: #f3f4f6;
-        }
-
-        /* Pending flip warning */
-        .pending-flip {
-            background: rgba(245, 158, 11, 0.15);
-            border: 1px solid rgba(245, 158, 11, 0.3);
-            border-radius: 8px;
-            padding: 12px 16px;
-            margin-top: 16px;
-            font-size: 14px;
-            color: #F59E0B;
-        }
-
-        /* Data freshness */
-        .freshness-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 500;
-        }
-
-        .freshness-badge.fresh {
-            background: rgba(16, 185, 129, 0.15);
-            color: #10B981;
-        }
-
-        .freshness-badge.stale {
-            background: rgba(245, 158, 11, 0.15);
-            color: #F59E0B;
-        }
-
-        .freshness-badge.old {
-            background: rgba(239, 68, 68, 0.15);
-            color: #EF4444;
-        }
-
-        /* Section headers */
-        .section-header {
-            font-size: 20px;
-            font-weight: 700;
-            color: #f3f4f6;
-            margin: 32px 0 16px 0;
+            margin: 28px 0 14px 0;
             padding-bottom: 8px;
-            border-bottom: 1px solid rgba(99, 102, 241, 0.2);
+            border-bottom: 1px solid rgba(71, 85, 105, 0.3);
         }
 
-        /* Warning banner */
+        /* ===== TOGGLE STYLING ===== */
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: #94A3B8;
+        }
+
+        /* ===== WARNING BANNER ===== */
         .warning-banner {
-            background: rgba(239, 68, 68, 0.1);
-            border: 1px solid rgba(239, 68, 68, 0.3);
-            border-radius: 12px;
-            padding: 16px 20px;
-            margin: 16px 0;
-            font-size: 14px;
+            background: rgba(239, 68, 68, 0.08);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            border-radius: 8px;
+            padding: 14px 18px;
+            margin: 14px 0;
+            font-size: 13px;
             color: #EF4444;
         }
 
-        /* Refresh button */
+        /* ===== PENDING FLIP ===== */
+        .pending-flip {
+            background: rgba(251, 191, 36, 0.1);
+            border: 1px solid rgba(251, 191, 36, 0.25);
+            border-radius: 6px;
+            padding: 10px 14px;
+            margin-top: 14px;
+            font-size: 13px;
+            color: #FBBF24;
+        }
+
+        /* ===== REFRESH BUTTON ===== */
         .stButton > button {
-            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
-            border: none;
-            border-radius: 10px;
-            padding: 10px 24px;
-            font-weight: 600;
-            transition: all 0.3s ease;
+            background: rgba(129, 140, 248, 0.15);
+            border: 1px solid rgba(129, 140, 248, 0.3);
+            border-radius: 6px;
+            padding: 8px 20px;
+            font-weight: 500;
+            color: #818CF8;
+            transition: all 0.2s ease;
         }
 
         .stButton > button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+            background: rgba(129, 140, 248, 0.25);
+            border-color: rgba(129, 140, 248, 0.5);
         }
 
-        /* Plotly chart styling */
-        .js-plotly-plot .plotly {
-            border-radius: 12px;
+        /* Chart containers - tighter spacing */
+        [data-testid="stPlotlyChart"] {
+            margin-top: 4px;
         }
 
         /* Info icon and tooltip */
         .metric-name-with-info {
             display: inline-flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
         }
 
         .info-icon {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            width: 18px;
-            height: 18px;
-            font-size: 12px;
-            color: #6B7280;
+            width: 16px;
+            height: 16px;
+            font-size: 11px;
+            color: #475569;
             cursor: help;
             transition: color 0.2s ease;
             position: relative;
         }
 
         .info-icon:hover {
-            color: #6366f1;
+            color: #818CF8;
         }
 
         .info-icon::after {
@@ -294,20 +423,20 @@ def inject_custom_css():
             left: 50%;
             bottom: calc(100% + 8px);
             transform: translateX(-50%);
-            background: #1e1e2e;
-            border: 1px solid rgba(99, 102, 241, 0.3);
-            border-radius: 8px;
-            padding: 12px 16px;
-            font-size: 12px;
+            background: #1E293B;
+            border: 1px solid rgba(71, 85, 105, 0.4);
+            border-radius: 6px;
+            padding: 10px 14px;
+            font-size: 11px;
             line-height: 1.5;
-            color: #d1d5db;
+            color: #94A3B8;
             white-space: pre-line;
-            width: 280px;
+            width: 260px;
             opacity: 0;
             visibility: hidden;
-            transition: opacity 0.2s ease, visibility 0.2s ease;
+            transition: opacity 0.15s ease, visibility 0.15s ease;
             z-index: 1000;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
             pointer-events: none;
         }
 
@@ -315,7 +444,119 @@ def inject_custom_css():
             opacity: 1;
             visibility: visible;
         }
+
+        /* Table refinements */
+        table {
+            font-size: 13px;
+        }
+
+        /* Hide Streamlit branding */
+        #MainMenu {visibility: hidden;}
+        footer {visibility: hidden;}
+
+        /* Expander styling */
+        .streamlit-expanderHeader {
+            font-size: 14px !important;
+            color: #94A3B8 !important;
+        }
     </style>
+    """, unsafe_allow_html=True)
+
+
+def render_regime_hero(
+    regime: str,
+    score: float,
+    tagline: str,
+    posture: str,
+    days_in_regime: int = 0,
+    regime_start_date: str = "",
+):
+    """Render the hero section with prominent pulsing regime indicator."""
+    icon = REGIME_ICONS.get(regime, "⚖️")
+
+    duration_html = ""
+    if days_in_regime > 0:
+        duration_html = f'<div class="hero-duration">In this regime for <strong>{days_in_regime} days</strong>{f" (since {regime_start_date})" if regime_start_date else ""}</div>'
+
+    st.markdown(f"""
+    <div class="hero-section {regime}">
+        <div class="regime-indicator {regime}">
+            <span>{icon}</span>
+        </div>
+        <div class="hero-regime-name {regime}">{regime.upper()}</div>
+        <div class="hero-score">Score: {score:+.1f}</div>
+        <div class="hero-tagline">{tagline}</div>
+        <div class="hero-posture">{posture}</div>
+        {duration_html}
+    </div>
+    """, unsafe_allow_html=True)
+
+
+def render_five_forces_strip(scores: Dict[str, Any], plain_english: bool = True):
+    """Render the Five Forces of Liquidity summary strip."""
+
+    # Define force names for both modes
+    forces = [
+        {
+            "key": "walcl",
+            "name_plain": "Fed Printing",
+            "name_finance": "Fed Balance Sheet",
+        },
+        {
+            "key": "rrp",
+            "name_plain": "Sideline Cash",
+            "name_finance": "Reverse Repo",
+        },
+        {
+            "key": "hy_spread",
+            "name_plain": "Risk Appetite",
+            "name_finance": "Credit Spreads",
+        },
+        {
+            "key": "dxy",
+            "name_plain": "Dollar Strength",
+            "name_finance": "Dollar Index",
+        },
+        {
+            "key": "stablecoin",
+            "name_plain": "Crypto Dry Powder",
+            "name_finance": "Stablecoin Supply",
+        },
+    ]
+
+    pills_html = ""
+    for force in forces:
+        name = force["name_plain"] if plain_english else force["name_finance"]
+        individual = scores.get("individual", {}).get(force["key"], {})
+        signal = individual.get("score", 0)
+
+        if signal > 0:
+            dot_class = "bullish"
+        elif signal < 0:
+            dot_class = "bearish"
+        else:
+            dot_class = "neutral"
+
+        pills_html += f'<div class="force-pill"><span class="signal-dot {dot_class}"></span>{name}</div>'
+
+    st.markdown(f"""
+    <div class="forces-strip">
+        {pills_html}
+    </div>
+    """, unsafe_allow_html=True)
+
+
+def render_discord_cta(discord_url: str = "#"):
+    """Render the Discord call-to-action card."""
+    st.markdown(f"""
+    <div class="discord-cta">
+        <div class="discord-cta-icon">🔔</div>
+        <div class="discord-cta-text">
+            <h4>Get Daily Regime Alerts</h4>
+            <p>Join our Discord for automated updates when conditions change</p>
+        </div>
+        <a href="{discord_url}" class="discord-cta-button" target="_blank">Join Discord</a>
+    </div>
     """, unsafe_allow_html=True)
 
 
@@ -324,7 +565,7 @@ def render_regime_banner(
     regime_info: Dict[str, Any],
     scores: Dict[str, Any],
 ):
-    """Render the main regime banner."""
+    """Render the main regime banner (legacy - use render_regime_hero instead)."""
     regime = regime_info.get("regime", "balanced")
     icon = REGIME_ICONS.get(regime, "⚖️")
     total_score = scores.get("total", 0)
@@ -371,13 +612,14 @@ def render_metric_card(
     title: str,
     value: str,
     delta: Optional[str] = None,
-    delta_direction: str = "neutral",  # "positive", "negative", "neutral"
+    delta_direction: str = "neutral",
     reason: Optional[str] = None,
     weight: Optional[float] = None,
     chart: Optional[Any] = None,
     info: Optional[Dict[str, str]] = None,
+    why: Optional[str] = None,
 ):
-    """Render a metric card with optional chart and info tooltip."""
+    """Render a metric card with optional chart, info tooltip, and 'why it matters' micro-copy."""
 
     card_class = ""
     if delta_direction == "positive":
@@ -391,19 +633,24 @@ def render_metric_card(
 
     weight_html = ""
     if weight:
-        weight_html = f'<span style="color: #6B7280; font-size: 11px; margin-left: 8px;">({weight}x)</span>'
+        weight_html = f'<span style="color: #475569; font-size: 10px; margin-left: 8px;">({weight}x weight)</span>'
 
     reason_html = ""
     if reason:
-        reason_html = f'<div style="color: #9ca3af; font-size: 13px; margin-top: 8px;">{reason}</div>'
+        reason_html = f'<div style="color: #64748B; font-size: 12px; margin-top: 8px;">{reason}</div>'
+
+    why_html = ""
+    if why:
+        why_html = f'<div class="metric-why">{why}</div>'
 
     info_html = ""
     if info:
-        tooltip_text = f"{info.get('desc', '')}&#10;&#10;🟢 Bullish: {info.get('bullish', 'N/A')}&#10;🔴 Bearish: {info.get('bearish', 'N/A')}"
-        info_html = f'<span class="info-icon" title="{tooltip_text}">ⓘ</span>'
+        tooltip_text = f"{info.get('desc', '')}&#10;&#10;Bullish: {info.get('bullish', 'N/A')}&#10;Bearish: {info.get('bearish', 'N/A')}"
+        info_html = f'<span class="info-icon" title="{tooltip_text}">?</span>'
 
     st.markdown(f"""<div class="metric-card {card_class}">
 <div class="metric-title"><span class="metric-name-with-info">{title}{info_html}</span>{weight_html}</div>
+{why_html}
 <div class="metric-value">{value}</div>
 {delta_html}
 {reason_html}
@@ -473,12 +720,16 @@ def format_large_number(value: float) -> str:
         return f"${value:.2f}"
 
 
-def format_percentage(value: float, include_sign: bool = True) -> str:
+def format_percentage(value: float, include_sign: bool = True, plain_english: bool = False) -> str:
     """Format percentage for display."""
     if value is None:
         return "N/A"
 
-    if include_sign:
-        return f"{value*100:+.1f}%"
+    pct = value * 100
+    if plain_english:
+        direction = "up" if pct > 0 else "down"
+        return f"{direction} {abs(pct):.1f}% this month"
+    elif include_sign:
+        return f"{pct:+.1f}%"
     else:
-        return f"{value*100:.1f}%"
+        return f"{pct:.1f}%"

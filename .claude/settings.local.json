@@ -4,7 +4,11 @@
       "Bash(python:*)",
       "Bash(curl:*)",
       "Bash(cmd /c \"set FRED_API_KEY=4574110873011811dc27f89e0eb20d61 && python -c \"\"from data.fetchers import fetch_fred_series; df = fetch_fred_series\\(''WALCL'', days_back=30\\); print\\(f''Rows: {len\\(df\\)}''\\); print\\(df.tail\\(3\\) if len\\(df\\) > 0 else ''No data''\\)\"\"\")",
-      "Bash(del:*)"
+      "Bash(del:*)",
+      "Bash(streamlit run:*)",
+      "Bash(timeout:*)",
+      "Bash(agent-browser open:*)",
+      "mcp__browsermcp__browser_navigate"
     ]
   }
 }
