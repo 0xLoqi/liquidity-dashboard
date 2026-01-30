@@ -123,6 +123,26 @@ def main():
             load_data(force_refresh=True)
             st.rerun()
 
+    # About section - collapsible
+    with st.expander("ℹ️ What is this? Why these indicators?"):
+        st.markdown("""
+**The Thesis**: Crypto markets are heavily influenced by global liquidity conditions. When there's abundant cheap money in the system, risk assets (including crypto) tend to perform well. When liquidity tightens, they struggle.
+
+**What we're measuring**:
+- **Fed Balance Sheet** — When the Fed expands its balance sheet, it injects liquidity into the financial system
+- **Reverse Repo (RRP)** — Cash parked here is "on the sidelines." When it drains, that money often flows into markets
+- **High Yield Spreads** — The gap between junk bonds and Treasuries. Tight spreads = investors are risk-seeking
+- **Dollar Index (DXY)** — A strong dollar tightens global financial conditions; weakness is typically bullish for crypto
+- **Stablecoin Supply** — A proxy for capital sitting on crypto's sidelines, ready to deploy
+
+**The Regimes**:
+- 🚀 **Aggressive** — Liquidity tailwinds favor risk-on positioning (requires BTC above 200 DMA as confirmation)
+- ⚖️ **Balanced** — Mixed signals; be selective, avoid overexposure
+- 🛡️ **Defensive** — Liquidity headwinds suggest caution and capital preservation
+
+**Not financial advice.** This is a framework for understanding macro conditions, not a trading signal.
+        """)
+
     # Check for FRED API key
     if not has_fred_api_key():
         st.warning("""
