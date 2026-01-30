@@ -4,7 +4,6 @@ run.bat
 
 # Cache
 cache.db
-regime_state.json
 
 # Python
 __pycache__/

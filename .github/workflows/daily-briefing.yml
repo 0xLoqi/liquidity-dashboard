@@ -1,0 +1,63 @@
+name: Liquidity Regime Briefing
+
+on:
+  schedule:
+    # Daily briefing at 8am EST (1pm UTC)
+    - cron: '0 13 * * *'
+    # Check for regime changes every 4 hours
+    - cron: '0 */4 * * *'
+  workflow_dispatch:
+    inputs:
+      force_daily:
+        description: 'Force send daily briefing'
+        required: false
+        default: 'false'
+
+jobs:
+  briefing:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+      
+      - name: Determine run type
+        id: runtype
+        run: |
+          HOUR=$(date -u +%H)
+          # 13:00 UTC = 8am EST - daily briefing time
+          if [ "$HOUR" = "13" ] || [ "${{ github.event.inputs.force_daily }}" = "true" ]; then
+            echo "daily=true" >> $GITHUB_OUTPUT
+          else
+            echo "daily=false" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Run briefing
+        env:
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+          COINGECKO_API_KEY: ${{ secrets.COINGECKO_API_KEY }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          DASHBOARD_URL: ${{ vars.DASHBOARD_URL }}
+        run: |
+          if [ "${{ steps.runtype.outputs.daily }}" = "true" ]; then
+            python notifications/run_briefing.py --daily
+          else
+            python notifications/run_briefing.py --check-only
+          fi
+      
+      - name: Commit state changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add regime_state.json || true
+          git diff --staged --quiet || git commit -m "Update regime state [skip ci]"
+          git push || true
