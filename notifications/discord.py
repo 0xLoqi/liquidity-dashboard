@@ -27,12 +27,14 @@ def send_daily_briefing(
     metrics: Dict[str, Any],
     scores: Dict[str, Any],
     dashboard_url: str,
+    btc_price: Optional[float] = None,
+    btc_200dma: Optional[float] = None,
 ) -> bool:
     """Send daily regime briefing to Discord."""
-    
+
     emoji = REGIME_EMOJIS.get(regime, "📊")
     color = REGIME_COLORS.get(regime, 0x6366F1)
-    
+
     # Build metric summary
     metric_lines = []
     for name, data in scores.get("individual", {}).items():
@@ -40,32 +42,35 @@ def send_daily_briefing(
         icon = "🟢" if sig > 0 else "🔴" if sig < 0 else "⚪"
         display = name.upper().replace("_", " ")
         metric_lines.append(f"{icon} **{display}**: {sig:+d}")
-    
+
     metrics_text = "\n".join(metric_lines) if metric_lines else "No data"
-    
-    # BTC gate status
+
+    # BTC info
     btc_above = scores.get("btc_above_200dma", False)
-    btc_status = "✅ Above 200 DMA" if btc_above else "❌ Below 200 DMA"
-    
+    btc_icon = "✅" if btc_above else "❌"
+    btc_price_str = f"${btc_price:,.0f}" if btc_price else "N/A"
+    btc_ma_str = f"${btc_200dma:,.0f}" if btc_200dma else "N/A"
+    btc_status = f"{btc_icon} **{btc_price_str}**\n200 DMA: {btc_ma_str}"
+
     embed = {
         "title": f"{emoji} Liquidity Regime: {regime.upper()}",
         "description": f"**Composite Score: {score:+.1f}**\n\nDaily macro-liquidity briefing",
         "color": color,
         "fields": [
             {
-                "name": "📊 Indicator Signals",
-                "value": metrics_text,
-                "inline": False,
-            },
-            {
-                "name": "₿ BTC Gate",
+                "name": "₿ Bitcoin",
                 "value": btc_status,
                 "inline": True,
             },
             {
                 "name": "📈 Dashboard",
-                "value": f"[View Full Dashboard]({dashboard_url})",
+                "value": f"[View Full Details]({dashboard_url})",
                 "inline": True,
+            },
+            {
+                "name": "📊 Indicator Signals",
+                "value": metrics_text,
+                "inline": False,
             },
         ],
         "footer": {
@@ -90,30 +95,33 @@ def send_regime_change_alert(
     new_regime: str,
     score: float,
     dashboard_url: str,
+    btc_price: Optional[float] = None,
 ) -> bool:
     """Send urgent alert when regime changes."""
-    
-    old_emoji = REGIME_EMOJIS.get(old_regime, "❓")
-    new_emoji = REGIME_EMOJIS.get(new_regime, "❓")
+
+    old_emoji = REGIME_EMOJIS.get(old_regime, "?")
+    new_emoji = REGIME_EMOJIS.get(new_regime, "?")
     color = REGIME_COLORS.get(new_regime, 0x6366F1)
-    
+
     # Determine if this is bullish or bearish shift
     regime_order = {"defensive": 0, "balanced": 1, "aggressive": 2}
     old_rank = regime_order.get(old_regime, 1)
     new_rank = regime_order.get(new_regime, 1)
-    
+
     if new_rank > old_rank:
-        direction = "⬆️ BULLISH SHIFT"
+        direction = "BULLISH SHIFT"
     else:
-        direction = "⬇️ BEARISH SHIFT"
-    
+        direction = "BEARISH SHIFT"
+
+    btc_str = f"${btc_price:,.0f}" if btc_price else "N/A"
+
     embed = {
-        "title": f"🚨 REGIME CHANGE: {direction}",
-        "description": f"{old_emoji} {old_regime.upper()} → {new_emoji} **{new_regime.upper()}**\n\n**Score: {score:+.1f}**",
+        "title": f"REGIME CHANGE: {direction}",
+        "description": f"{old_emoji} {old_regime.upper()} -> {new_emoji} **{new_regime.upper()}**\n\n**Score: {score:+.1f}** | **BTC: {btc_str}**",
         "color": color,
         "fields": [
             {
-                "name": "📈 View Details",
+                "name": "View Details",
                 "value": f"[Open Dashboard]({dashboard_url})",
                 "inline": False,
             },

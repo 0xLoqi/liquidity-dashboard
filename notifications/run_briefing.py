@@ -57,25 +57,32 @@ def run_briefing(daily: bool = True, check_change: bool = True):
     
     total_score = scores.get("total", 0)
     previous_regime = load_previous_regime()
-    
+
+    # Get BTC data
+    btc_data = metrics.get("btc", {})
+    btc_price = btc_data.get("current_price")
+    btc_200dma = btc_data.get("ma_200")
+
     print(f"Current regime: {regime} (score: {total_score:+.1f})")
+    print(f"BTC: ${btc_price:,.0f}" if btc_price else "BTC: N/A")
     print(f"Previous regime: {previous_regime}")
-    
+
     # Check for regime change
     if check_change and regime != previous_regime:
-        print(f"🚨 Regime changed from {previous_regime} to {regime}!")
+        print(f"ALERT: Regime changed from {previous_regime} to {regime}!")
         success = send_regime_change_alert(
             webhook_url=webhook_url,
             old_regime=previous_regime,
             new_regime=regime,
             score=total_score,
             dashboard_url=dashboard_url,
+            btc_price=btc_price,
         )
         if success:
-            print("✅ Regime change alert sent!")
+            print("[OK] Regime change alert sent!")
         else:
-            print("❌ Failed to send regime change alert")
-    
+            print("[FAIL] Failed to send regime change alert")
+
     # Send daily briefing
     if daily:
         print("Sending daily briefing...")
@@ -86,11 +93,13 @@ def run_briefing(daily: bool = True, check_change: bool = True):
             metrics=metrics,
             scores=scores,
             dashboard_url=dashboard_url,
+            btc_price=btc_price,
+            btc_200dma=btc_200dma,
         )
         if success:
-            print("✅ Daily briefing sent!")
+            print("[OK] Daily briefing sent!")
         else:
-            print("❌ Failed to send daily briefing")
+            print("[FAIL] Failed to send daily briefing")
 
 
 if __name__ == "__main__":
