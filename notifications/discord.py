@@ -15,8 +15,24 @@ REGIME_COLORS = {
 
 REGIME_EMOJIS = {
     "aggressive": "🚀",
-    "balanced": "⚖️", 
+    "balanced": "⚖️",
     "defensive": "🛡️",
+}
+
+# Plain English descriptions for each regime
+REGIME_DESCRIPTIONS = {
+    "aggressive": "Liquidity conditions look favorable. Macro tailwinds support risk-on positioning.",
+    "balanced": "Mixed signals across indicators. Stay selective and avoid overexposure.",
+    "defensive": "Liquidity headwinds present. Consider reducing risk and preserving capital.",
+}
+
+# Friendly names for metrics
+METRIC_NAMES = {
+    "walcl": "Fed Balance Sheet",
+    "rrp": "Reverse Repo",
+    "hy_spread": "Credit Spreads",
+    "dxy": "Dollar Strength",
+    "stablecoin": "Stablecoin Flows",
 }
 
 
@@ -34,27 +50,28 @@ def send_daily_briefing(
 
     emoji = REGIME_EMOJIS.get(regime, "📊")
     color = REGIME_COLORS.get(regime, 0x6366F1)
+    description = REGIME_DESCRIPTIONS.get(regime, "")
 
-    # Build metric summary
+    # Build metric summary with friendly names
     metric_lines = []
     for name, data in scores.get("individual", {}).items():
         sig = data.get("score", 0)
         icon = "🟢" if sig > 0 else "🔴" if sig < 0 else "⚪"
-        display = name.upper().replace("_", " ")
-        metric_lines.append(f"{icon} **{display}**: {sig:+d}")
+        friendly_name = METRIC_NAMES.get(name, name.replace("_", " ").title())
+        metric_lines.append(f"{icon} {friendly_name}")
 
     metrics_text = "\n".join(metric_lines) if metric_lines else "No data"
 
     # BTC info
     btc_above = scores.get("btc_above_200dma", False)
-    btc_icon = "✅" if btc_above else "❌"
     btc_price_str = f"${btc_price:,.0f}" if btc_price else "N/A"
     btc_ma_str = f"${btc_200dma:,.0f}" if btc_200dma else "N/A"
-    btc_status = f"{btc_icon} **{btc_price_str}**\n200 DMA: {btc_ma_str}"
+    btc_vs_ma = "above" if btc_above else "below"
+    btc_status = f"**{btc_price_str}** ({btc_vs_ma} {btc_ma_str} MA)"
 
     embed = {
-        "title": f"{emoji} Liquidity Regime: {regime.upper()}",
-        "description": f"**Composite Score: {score:+.1f}**\n\nDaily macro-liquidity briefing",
+        "title": f"{emoji} {regime.upper()} — Score: {score:+.1f}",
+        "description": description,
         "color": color,
         "fields": [
             {
@@ -63,18 +80,18 @@ def send_daily_briefing(
                 "inline": True,
             },
             {
-                "name": "📈 Dashboard",
-                "value": f"[View Full Details]({dashboard_url})",
+                "name": "📖 Learn More",
+                "value": f"[Open Dashboard]({dashboard_url})",
                 "inline": True,
             },
             {
-                "name": "📊 Indicator Signals",
+                "name": "Signals",
                 "value": metrics_text,
                 "inline": False,
             },
         ],
         "footer": {
-            "text": "Liquidity Regime Dashboard • Auto-updated daily"
+            "text": "Daily macro liquidity check"
         },
         "timestamp": datetime.utcnow().isoformat(),
     }
@@ -102,6 +119,7 @@ def send_regime_change_alert(
     old_emoji = REGIME_EMOJIS.get(old_regime, "?")
     new_emoji = REGIME_EMOJIS.get(new_regime, "?")
     color = REGIME_COLORS.get(new_regime, 0x6366F1)
+    new_description = REGIME_DESCRIPTIONS.get(new_regime, "")
 
     # Determine if this is bullish or bearish shift
     regime_order = {"defensive": 0, "balanced": 1, "aggressive": 2}
@@ -109,32 +127,32 @@ def send_regime_change_alert(
     new_rank = regime_order.get(new_regime, 1)
 
     if new_rank > old_rank:
-        direction = "BULLISH SHIFT"
+        direction = "Conditions improving"
     else:
-        direction = "BEARISH SHIFT"
+        direction = "Conditions deteriorating"
 
     btc_str = f"${btc_price:,.0f}" if btc_price else "N/A"
 
     embed = {
-        "title": f"REGIME CHANGE: {direction}",
-        "description": f"{old_emoji} {old_regime.upper()} -> {new_emoji} **{new_regime.upper()}**\n\n**Score: {score:+.1f}** | **BTC: {btc_str}**",
+        "title": f"Regime Change: {old_regime.title()} → {new_regime.title()}",
+        "description": f"**{direction}**\n\n{new_description}\n\n₿ BTC: **{btc_str}** | Score: **{score:+.1f}**",
         "color": color,
         "fields": [
             {
-                "name": "View Details",
+                "name": "📖 Learn More",
                 "value": f"[Open Dashboard]({dashboard_url})",
                 "inline": False,
             },
         ],
         "footer": {
-            "text": "Liquidity Regime Alert"
+            "text": "Liquidity regime shift detected"
         },
         "timestamp": datetime.utcnow().isoformat(),
     }
-    
+
     # Add @here mention for urgency
     payload = {
-        "content": "||@here|| Regime change detected!",
+        "content": "Heads up — macro liquidity regime just changed:",
         "embeds": [embed]
     }
     
