@@ -1,5 +1,5 @@
 """
-Liquidity Regime Discord Bot
+FlowState Discord Bot
 Slash commands + automatic alerts for regime changes
 """
 import os
@@ -24,7 +24,7 @@ intents = discord.Intents.default()
 intents.message_content = True
 
 
-class LiquidityBot(discord.Client):
+class FlowStateBot(discord.Client):
     def __init__(self):
         super().__init__(intents=intents)
         self.tree = app_commands.CommandTree(self)
@@ -72,7 +72,7 @@ class LiquidityBot(discord.Client):
         return self.data_cache
 
 
-bot = LiquidityBot()
+bot = FlowStateBot()
 
 REGIME_COLORS = {
     "aggressive": discord.Color.green(),
@@ -121,7 +121,7 @@ def create_regime_embed(cache_data, include_signals=True):
     btc_vs = "above" if btc_above else "below"
     embed.add_field(name="BTC", value=f"**{btc_str}** ({btc_vs} {btc_ma_str} MA)", inline=True)
 
-    dashboard_url = os.environ.get("DASHBOARD_URL", "https://liquidity-dashboard.streamlit.app")
+    dashboard_url = os.environ.get("DASHBOARD_URL", "https://flowstate.streamlit.app")
     embed.add_field(name="Learn More", value=f"[Dashboard]({dashboard_url})", inline=True)
 
     if include_signals:
@@ -132,7 +132,7 @@ def create_regime_embed(cache_data, include_signals=True):
             lines.append(f"[{icon}] {METRIC_NAMES.get(name, name)}")
         embed.add_field(name="Signals", value="\n".join(lines) or "No data", inline=False)
 
-    embed.set_footer(text="Liquidity Regime Bot")
+    embed.set_footer(text="FlowState Bot")
     return embed
 
 
@@ -181,7 +181,7 @@ async def btc_command(interaction: discord.Interaction):
             value="BTC must be above its 200 DMA for an Aggressive regime signal.",
             inline=False
         )
-        embed.set_footer(text="Liquidity Regime Bot")
+        embed.set_footer(text="FlowState Bot")
         await interaction.followup.send(embed=embed)
 
     except Exception as e:
@@ -226,8 +226,8 @@ async def unsubscribe_command(interaction: discord.Interaction):
 @bot.tree.command(name="explain", description="Learn what this bot tracks and why it matters")
 async def explain_command(interaction: discord.Interaction):
     embed = discord.Embed(
-        title="What is Liquidity Regime?",
-        description="Crypto moves with liquidity. This bot tracks the macro signals that matter.",
+        title="What is FlowState?",
+        description="Crypto moves with liquidity. FlowState tracks the macro signals that matter.",
         color=discord.Color.blurple()
     )
 
@@ -249,7 +249,7 @@ async def explain_command(interaction: discord.Interaction):
         inline=False
     )
 
-    dashboard_url = os.environ.get("DASHBOARD_URL", "https://liquidity-dashboard.streamlit.app")
+    dashboard_url = os.environ.get("DASHBOARD_URL", "https://flowstate.streamlit.app")
     embed.add_field(name="Full Dashboard", value=f"[Open]({dashboard_url})", inline=False)
     embed.set_footer(text="Not financial advice")
 
@@ -290,9 +290,9 @@ async def check_regime_changes():
                 timestamp=datetime.utcnow()
             )
 
-            dashboard_url = os.environ.get("DASHBOARD_URL", "https://liquidity-dashboard.streamlit.app")
+            dashboard_url = os.environ.get("DASHBOARD_URL", "https://flowstate.streamlit.app")
             embed.add_field(name="Learn More", value=f"[Open Dashboard]({dashboard_url})", inline=False)
-            embed.set_footer(text="Liquidity Regime Alert")
+            embed.set_footer(text="FlowState Alert")
 
             for channel_id in bot.subscribed_channels.copy():
                 try:
