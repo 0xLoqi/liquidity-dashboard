@@ -13,7 +13,7 @@ COLORS = {
     "bullish": "#22C55E",       # Clean green
     "bearish": "#EF4444",       # Clean red
     "neutral": "#64748B",       # Slate gray
-    "accent": "#818CF8",        # Soft indigo
+    "accent": "#3B82F6",        # Deep blue (FlowState brand)
     "muted": "#334155",         # Dark slate
     "text": "#94A3B8",          # Slate 400
     "text_bright": "#E2E8F0",   # Slate 200

@@ -1,7 +1,7 @@
 """
-Crypto Liquidity Regime Dashboard
+FlowState - Real-time crypto liquidity regime tracker
 A local Streamlit app that classifies macro + crypto environment into risk regimes.
-Redesigned for LinkedIn-shareable, educational presentation.
+Designed for LinkedIn-shareable, educational presentation.
 """
 
 import streamlit as st
@@ -11,11 +11,29 @@ import json
 
 # Configure page
 st.set_page_config(
-    page_title="Liquidity Regime Dashboard",
-    page_icon="📊",
+    page_title="FlowState",
+    page_icon="🌊",
     layout="wide",
     initial_sidebar_state="collapsed",
 )
+
+# Inject Open Graph meta tags for LinkedIn previews
+def inject_og_meta():
+    """Inject Open Graph meta tags for social sharing."""
+    st.markdown("""
+    <head>
+        <meta property="og:title" content="FlowState - Crypto Liquidity Regime Tracker" />
+        <meta property="og:description" content="Track 5 macro liquidity indicators to know when crypto conditions favor risk-on vs playing defense. Free tool by Elijah Wilbanks." />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://flowstate.streamlit.app" />
+        <meta property="og:image" content="https://flowstate.streamlit.app/og-image.png" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="FlowState - Crypto Liquidity Regime Tracker" />
+        <meta name="twitter:description" content="Track 5 macro liquidity indicators to know when crypto conditions favor risk-on vs playing defense." />
+    </head>
+    """, unsafe_allow_html=True)
+
+inject_og_meta()
 
 # Local imports
 from data.fetchers import fetch_all_data, has_fred_api_key
@@ -28,9 +46,12 @@ from ui.components import (
     inject_custom_css,
     render_regime_hero,
     render_five_forces_strip,
-    render_discord_cta,
+    render_notifications_cta,
+    render_disclaimer_modal,
+    render_btc_gate_section,
     render_metric_card,
     render_section_header,
+    render_feedback_form,
     format_large_number,
     format_percentage,
 )
@@ -152,7 +173,6 @@ METRIC_INFO = {
 # Initialize cache and state file paths
 CACHE = CacheManager()
 STATE_FILE = Path(__file__).parent / "regime_state.json"
-DISCORD_URL = "#"  # Placeholder - replace with actual Discord invite
 
 
 def get_copy(key: str, mode: str, copy_dict: dict) -> str:
@@ -193,38 +213,48 @@ def get_days_in_regime(state_file: Path) -> tuple:
 def main():
     """Main app function."""
 
+    # Initialize session state for disclaimer
+    if "disclaimer_accepted" not in st.session_state:
+        st.session_state.disclaimer_accepted = False
+
     # Inject custom CSS
     inject_custom_css()
 
     # ==========================================================================
-    # HEADER WITH PLAIN ENGLISH TOGGLE
+    # DISCLAIMER GATE - Must accept before viewing
     # ==========================================================================
-    header_col1, header_col2, header_col3 = st.columns([2, 1, 1])
+    if not st.session_state.disclaimer_accepted:
+        render_disclaimer_modal()
+        st.stop()
+
+    # ==========================================================================
+    # HEADER WITH ALERTS
+    # ==========================================================================
+    header_col1, header_col2 = st.columns([3, 1])
 
     with header_col1:
         st.markdown("""
-        <h1 style="margin: 0; padding: 16px 0 4px 0; font-size: 22px; font-weight: 700; color: #E2E8F0; letter-spacing: -0.5px;">
-            Liquidity Regime Dashboard
-        </h1>
+        <div style="display: flex; align-items: center; gap: 12px; padding: 16px 0 8px 0;">
+            <span style="font-size: 28px;">🌊</span>
+            <h1 style="margin: 0; font-size: 24px; font-weight: 800; color: #E2E8F0; letter-spacing: -0.5px; font-family: 'Outfit', sans-serif;">
+                FlowState
+            </h1>
+            <span style="background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); color: #3B82F6; font-size: 10px; font-weight: 700; padding: 4px 10px; border-radius: 12px; text-transform: uppercase; letter-spacing: 1px;">
+                Live
+            </span>
+        </div>
         """, unsafe_allow_html=True)
 
     with header_col2:
-        plain_english = st.toggle("Plain English", value=True, help="Switch between simple explanations and finance terminology")
-        mode = "plain" if plain_english else "finance"
+        st.markdown('<div style="padding-top: 16px;"></div>', unsafe_allow_html=True)
+        with st.popover("🔔 Get Alerts", use_container_width=True):
+            render_notifications_cta()
 
-    with header_col3:
-        if st.button("Refresh Data", use_container_width=True):
-            st.cache_data.clear()
-            load_data(force_refresh=True)
-            st.rerun()
-
-    # ==========================================================================
-    # CHECK FOR FRED API KEY
-    # ==========================================================================
-    if not has_fred_api_key():
-        st.warning("""
-        **FRED API Key Required** — Get a free key at [fred.stlouisfed.org](https://fred.stlouisfed.org/docs/api/api_key.html) and set it as `FRED_API_KEY` environment variable.
-        """)
+    # Initialize plain_english mode from session state or default
+    if "plain_english" not in st.session_state:
+        st.session_state.plain_english = True
+    plain_english = st.session_state.plain_english
+    mode = "plain" if plain_english else "finance"
 
     # ==========================================================================
     # LOAD DATA
@@ -282,23 +312,30 @@ def main():
     with col1:
         walcl = metrics.get("walcl", {})
         walcl_score = scores["individual"].get("walcl", {})
-        delta = walcl.get("delta_4w")
-        direction = "positive" if walcl_score.get("score", 0) > 0 else (
-            "negative" if walcl_score.get("score", 0) < 0 else "neutral"
-        )
+        score_val = walcl_score.get("score", 0)
+        direction = "positive" if score_val > 0 else ("negative" if score_val < 0 else "neutral")
 
         walcl_value = walcl.get("current")
         if walcl_value:
             walcl_value = walcl_value * 1e6
 
+        # Simple directional text instead of misleading percentages
+        if score_val > 0:
+            delta_text = "↑ Expanding" if plain_english else "↑ QE"
+        elif score_val < 0:
+            delta_text = "↓ Shrinking" if plain_english else "↓ QT"
+        else:
+            delta_text = "→ Flat"
+
         render_metric_card(
             title=get_copy("walcl", mode, METRIC_TITLES),
             value=format_large_number(walcl_value),
-            delta=format_percentage(delta, plain_english=plain_english) if delta else None,
+            delta=delta_text,
             delta_direction=direction,
             weight=WEIGHTS["walcl"],
             info=METRIC_INFO.get("walcl"),
             why=get_copy("walcl", mode, METRIC_WHY),
+            source="FRED",
         )
 
         if "walcl" in charts:
@@ -309,23 +346,30 @@ def main():
     with col2:
         rrp = metrics.get("rrp", {})
         rrp_score = scores["individual"].get("rrp", {})
-        delta = rrp.get("delta_4w")
-        direction = "positive" if rrp_score.get("score", 0) > 0 else (
-            "negative" if rrp_score.get("score", 0) < 0 else "neutral"
-        )
+        score_val = rrp_score.get("score", 0)
+        direction = "positive" if score_val > 0 else ("negative" if score_val < 0 else "neutral")
 
         rrp_value = rrp.get("current")
         if rrp_value:
             rrp_value = rrp_value * 1e9
 
+        # Simple directional text - RRP draining is bullish
+        if score_val > 0:
+            delta_text = "↓ Draining" if plain_english else "↓ Draining"
+        elif score_val < 0:
+            delta_text = "↑ Building" if plain_english else "↑ Building"
+        else:
+            delta_text = "→ Stable"
+
         render_metric_card(
             title=get_copy("rrp", mode, METRIC_TITLES),
             value=format_large_number(rrp_value),
-            delta=format_percentage(delta, plain_english=plain_english) if delta else None,
+            delta=delta_text,
             delta_direction=direction,
             weight=WEIGHTS["rrp"],
             info=METRIC_INFO.get("rrp"),
             why=get_copy("rrp", mode, METRIC_WHY),
+            source="FRED",
         )
 
         if "rrpontsyd" in charts:
@@ -352,6 +396,7 @@ def main():
             weight=WEIGHTS["hy_spread"],
             info=METRIC_INFO.get("hy_spread"),
             why=get_copy("hy_spread", mode, METRIC_WHY),
+            source="FRED",
         )
 
         if "bamlh0a0hym2" in charts:
@@ -361,7 +406,7 @@ def main():
     # ==========================================================================
     # INDICATOR CARDS - Row 2
     # ==========================================================================
-    col1, col2, col3 = st.columns(3)
+    col1, col2 = st.columns(2)
 
     # DXY Card
     with col1:
@@ -383,6 +428,7 @@ def main():
             weight=WEIGHTS["dxy"],
             info=METRIC_INFO.get("dxy"),
             why=get_copy("dxy", mode, METRIC_WHY),
+            source="FRED",
         )
 
         if "dtwexbgs" in charts:
@@ -406,45 +452,31 @@ def main():
             weight=WEIGHTS["stablecoin"],
             info=METRIC_INFO.get("stablecoin"),
             why=get_copy("stablecoin", mode, METRIC_WHY),
+            source="DefiLlama",
         )
 
         if "stablecoins" in charts:
             chart = create_sparkline(charts["stablecoins"], value_col="supply", height=70)
             st.plotly_chart(chart, use_container_width=True, config={"displayModeBar": False})
 
-    # BTC Gate Card
-    with col3:
-        btc = metrics.get("btc", {})
-        current_price = btc.get("current_price")
-        ma_200 = btc.get("ma_200")
-        above = btc.get("above_200dma", False)
-        distance = btc.get("distance_from_200dma")
-
-        if plain_english:
-            status = "Above trend ✓" if above else "Below trend ✗"
-        else:
-            status = "✅ Above 200 DMA" if above else "❌ Below 200 DMA"
-        direction = "positive" if above else "negative"
-
-        value_str = f"${current_price:,.0f}" if current_price else "N/A"
-
-        render_metric_card(
-            title=get_copy("btc_gate", mode, METRIC_TITLES),
-            value=value_str,
-            delta=f"{status}",
-            delta_direction=direction,
-            info=METRIC_INFO.get("btc_gate"),
-            why=get_copy("btc_gate", mode, METRIC_WHY),
-        )
-
-        if "btc" in charts:
-            chart = create_btc_chart(charts["btc"], ma_200=ma_200, height=140)
-            st.plotly_chart(chart, use_container_width=True, config={"displayModeBar": False})
-
     # ==========================================================================
-    # DISCORD CTA
+    # BTC TREND GATE - Separate from Five Forces
     # ==========================================================================
-    render_discord_cta(discord_url=DISCORD_URL)
+    btc = metrics.get("btc", {})
+    current_price = btc.get("current_price")
+    ma_200 = btc.get("ma_200")
+    above = btc.get("above_200dma", False)
+
+    render_btc_gate_section(
+        current_price=current_price,
+        above_200dma=above,
+        plain_english=plain_english,
+    )
+
+    # BTC Chart below the gate
+    if "btc" in charts:
+        btc_chart = create_btc_chart(charts["btc"], ma_200=ma_200, height=160)
+        st.plotly_chart(btc_chart, use_container_width=True, config={"displayModeBar": False})
 
     # ==========================================================================
     # TECHNICAL DETAILS (Collapsible)
@@ -491,11 +523,11 @@ def main():
 <th style="text-align: center; padding: 12px; color: #64748B; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Contrib</th>
 </tr>
 {rows_html}
-<tr style="background: rgba(129, 140, 248, 0.08);">
+<tr style="background: rgba(59, 130, 246, 0.1);">
 <td style="padding: 14px 12px; color: #E2E8F0; font-weight: 600; font-size: 13px;">Total Score</td>
 <td style="text-align: center; padding: 14px 12px;"></td>
 <td style="text-align: center; padding: 14px 12px;"></td>
-<td style="text-align: center; padding: 14px 12px; color: #818CF8; font-weight: 700; font-size: 16px; font-family: 'JetBrains Mono', monospace;">{total_contrib:+.1f}</td>
+<td style="text-align: center; padding: 14px 12px; color: #3B82F6; font-weight: 700; font-size: 16px; font-family: 'JetBrains Mono', monospace;">{total_contrib:+.1f}</td>
 </tr>
 </table>
 </div>'''
@@ -562,12 +594,46 @@ Crypto markets are heavily influenced by global liquidity conditions. When there
         """)
 
     # ==========================================================================
+    # SETTINGS ROW - Display mode toggle
+    # ==========================================================================
+    st.markdown('<div style="margin-top: 32px;"></div>', unsafe_allow_html=True)
+    settings_col1, settings_col2, settings_col3 = st.columns([1, 2, 1])
+    with settings_col2:
+        st.markdown("""
+        <div style="text-align: center; padding: 12px 0; border-top: 1px solid rgba(71, 85, 105, 0.15); border-bottom: 1px solid rgba(71, 85, 105, 0.15);">
+            <span style="font-size: 11px; color: #64748B; text-transform: uppercase; letter-spacing: 1px;">Display Mode</span>
+        </div>
+        """, unsafe_allow_html=True)
+        toggle_col1, toggle_col2, toggle_col3 = st.columns([1, 2, 1])
+        with toggle_col2:
+            new_plain_english = st.toggle(
+                "Plain English",
+                value=st.session_state.plain_english,
+                help="Switch between simple explanations and finance terminology",
+                key="plain_english_toggle"
+            )
+            if new_plain_english != st.session_state.plain_english:
+                st.session_state.plain_english = new_plain_english
+                st.rerun()
+
+    # ==========================================================================
     # FOOTER
     # ==========================================================================
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
-    st.markdown(f"""<div style="text-align: center; padding: 28px 0; color: #475569; font-size: 11px; border-top: 1px solid rgba(71, 85, 105, 0.2); margin-top: 24px;">
-Sources: FRED (Federal Reserve) • CoinGecko • DefiLlama&nbsp;&nbsp;|&nbsp;&nbsp;Auto-refresh: 4h&nbsp;&nbsp;|&nbsp;&nbsp;Updated: {timestamp}<br>
-<span style="color: #64748B;">Not financial advice. For educational purposes only.</span>
+
+    # Feedback popover
+    footer_col1, footer_col2, footer_col3 = st.columns([1, 2, 1])
+    with footer_col2:
+        st.markdown('<div style="text-align: center; margin-bottom: 16px;"></div>', unsafe_allow_html=True)
+        with st.popover("💬 Share Feedback", use_container_width=True):
+            render_feedback_form()
+
+    st.markdown(f"""<div style="text-align: center; padding: 24px 0; color: #475569; font-size: 11px; margin-top: 8px;">
+<div style="margin-bottom: 8px;">
+<span style="color: #3B82F6; font-weight: 600; letter-spacing: 1px; font-size: 10px; text-transform: uppercase;">FlowState</span>
+</div>
+Built by <a href="https://www.linkedin.com/in/elijah-wilbanks/" target="_blank" style="color: #3B82F6; text-decoration: none; font-weight: 500;">Elijah Wilbanks</a>&nbsp;&nbsp;|&nbsp;&nbsp;Sources: FRED • CoinGecko • DefiLlama&nbsp;&nbsp;|&nbsp;&nbsp;Updated: {timestamp}<br>
+<span style="color: #64748B; margin-top: 4px; display: inline-block;">Not financial advice. For educational purposes only.</span>
 </div>""", unsafe_allow_html=True)
 
 

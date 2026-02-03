@@ -1,8 +1,8 @@
-# Claude Code Instructions for Liquidity Dashboard
+# Claude Code Instructions for FlowState
 
 ## Project Overview
 
-Streamlit dashboard for macro-crypto regime classification. Fetches data from FRED, CoinGecko, and DefiLlama, scores liquidity conditions, and classifies into Aggressive/Balanced/Defensive regimes.
+FlowState is a Streamlit dashboard for macro-crypto regime classification. Fetches data from FRED, CoinGecko, and DefiLlama, scores liquidity conditions, and classifies into Aggressive/Balanced/Defensive regimes.
 
 ## Tech Stack
 

@@ -1,5 +1,5 @@
 """
-Configuration for Liquidity Regime Dashboard
+Configuration for FlowState - Real-time crypto liquidity regime tracker
 """
 
 # =============================================================================
@@ -48,10 +48,10 @@ METRIC_THRESHOLDS = {
     "rrp_delta_bearish": 0.05,         # 5% 4-week increase
     "hy_spread_bullish": -0.10,        # 10% tightening
     "hy_spread_bearish": 0.10,         # 10% widening
-    "dxy_bullish": -0.02,              # 2% decline
-    "dxy_bearish": 0.02,               # 2% increase
-    "stablecoin_bullish": 0.02,        # 2% 21-day increase
-    "stablecoin_bearish": -0.02,       # 2% 21-day decrease
+    "dxy_bullish": -0.008,             # 0.8% decline (based on P25-P75 range of historical data)
+    "dxy_bearish": 0.008,              # 0.8% increase
+    "stablecoin_bullish": 0.035,       # 3.5% 21-day increase (raised from 2% to filter baseline growth)
+    "stablecoin_bearish": -0.035,      # 3.5% 21-day decrease
 }
 
 # =============================================================================

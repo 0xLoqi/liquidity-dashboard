@@ -37,7 +37,7 @@ def run_briefing(daily: bool = True, check_change: bool = True):
     """Run the briefing/alert check."""
     
     webhook_url = os.environ.get("DISCORD_WEBHOOK_URL")
-    dashboard_url = os.environ.get("DASHBOARD_URL", "https://liquidity-dashboard.streamlit.app")
+    dashboard_url = os.environ.get("DASHBOARD_URL", "https://flowstate.streamlit.app")
     
     if not webhook_url:
         print("ERROR: DISCORD_WEBHOOK_URL not set")
