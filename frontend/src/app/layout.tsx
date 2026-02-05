@@ -26,6 +26,9 @@ const ibmPlexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
+  icons: {
+    icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌊</text></svg>",
+  },
   title: "FlowState — Crypto Liquidity Regime Tracker",
   description:
     "Track 5 macro liquidity indicators to know when crypto conditions favor risk-on vs playing defense.",
@@ -33,7 +36,7 @@ export const metadata: Metadata = {
     title: "FlowState — Crypto Liquidity Regime Tracker",
     description:
       "Track 5 macro liquidity indicators to know when crypto conditions favor risk-on vs playing defense.",
-    url: "https://flowstate.vercel.app",
+    url: "https://flowstate-dashboard.vercel.app",
     type: "website",
   },
   twitter: {

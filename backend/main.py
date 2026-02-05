@@ -41,6 +41,7 @@ app.add_middleware(
         "http://localhost:3000",
         "https://flowstate.vercel.app",
         "https://flowstate-dashboard.vercel.app",
+        "https://frontend-theta-sooty-66.vercel.app",
     ],
     allow_methods=["*"],
     allow_headers=["*"],
