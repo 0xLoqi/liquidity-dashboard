@@ -1,0 +1,7 @@
+.env
+__pycache__/
+*.py[cod]
+cache.db
+test_output.json
+subscribers.json
+feedback.json

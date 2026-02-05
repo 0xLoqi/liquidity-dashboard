@@ -2,87 +2,71 @@
 
 ## Project Overview
 
-FlowState is a Streamlit dashboard for macro-crypto regime classification. Fetches data from FRED, CoinGecko, and DefiLlama, scores liquidity conditions, and classifies into Aggressive/Balanced/Defensive regimes.
+FlowState is a macro-crypto regime classification dashboard. Fetches data from FRED, CoinGecko, and DefiLlama, scores liquidity conditions, and classifies into Aggressive/Balanced/Defensive regimes.
 
 ## Tech Stack
 
-- **Python 3.9+** with Streamlit
-- **SQLite** for caching
-- **Plotly** for charts
+- **Backend**: FastAPI (Python 3.11+) - `backend/`
+- **Frontend**: Next.js 16 + React 19 + Tailwind 4 - `frontend/`
+- **Charts**: Recharts
+- **Data fetching**: SWR (frontend), requests (backend)
+- **Caching**: SQLite
 - **APIs**: FRED (macro), CoinGecko (BTC), DefiLlama (stablecoins)
 
 ## Architecture
 
 ```
-app.py          → Main entry, orchestrates everything
-config.py       → All thresholds, weights, endpoints
-data/           → Fetching & transforms (fetchers.py, cache.py, transforms.py)
-scoring/        → Regime logic (engine.py, regime.py, explanations.py)
-ui/             → Components & charts (components.py, charts.py)
+backend/
+├── main.py              → FastAPI app, all endpoints
+├── config.py            → Thresholds, weights, API config
+├── data/                → Fetchers, cache, transforms
+├── scoring/             → Engine, regime logic, explanations
+├── regime_state.json    → Current regime state (THIS IS THE ACTIVE ONE)
+├── subscribers.json     → Email subscribers
+└── cache.db             → SQLite cache
+
+frontend/
+├── src/app/             → Next.js app router (page.tsx, layout.tsx)
+├── src/components/      → React components
+├── src/hooks/           → Custom hooks
+└── src/lib/             → Utilities
+
+(Legacy - NOT ACTIVE)
+app.py                   → Old Streamlit version
+ui/                      → Old Streamlit components
 ```
-
-## Key Files
-
-| File | Purpose |
-|------|---------|
-| `app.py` | Streamlit app entry point |
-| `config.py` | Thresholds, weights, API config - edit here for tuning |
-| `data/fetchers.py` | API clients for FRED, CoinGecko, DefiLlama |
-| `scoring/engine.py` | Per-metric scoring logic (-1, 0, +1) |
-| `scoring/regime.py` | Hysteresis and regime classification |
-| `regime_state.json` | Persisted state (current regime, consecutive days) |
 
 ## Running Locally
 
 ```bash
-# Set API key
-set FRED_API_KEY=your_key
+# Backend (from backend/)
+cd backend
+pip install -r requirements.txt
+uvicorn main:app --reload --port 8000
 
-# Run dashboard
-streamlit run app.py --server.port 8501
+# Frontend (from frontend/)
+cd frontend
+npm install
+npm run dev
 ```
 
-Or use `run.bat` on Windows.
+Backend needs `FRED_API_KEY` in `backend/.env`.
 
-## Common Tasks
+## Key Endpoints
 
-### Add a new indicator
+| Endpoint | Purpose |
+|----------|---------|
+| `GET /regime` | Current regime, score, all metrics |
+| `GET /chart-data/{metric}` | Historical data for sparklines |
+| `POST /subscribe` | Add email subscriber |
+| `POST /feedback` | Submit user feedback |
+| `GET /admin/subscribers` | List subscribers (auth required) |
 
-1. Add fetcher in `data/fetchers.py`
-2. Add transform in `data/transforms.py` if needed
-3. Add scoring logic in `scoring/engine.py`
-4. Add weight in `config.py`
-5. Add UI component in `ui/components.py`
-6. Wire up in `app.py`
+## Deployment
 
-### Change regime thresholds
-
-Edit `config.py`:
-```python
-AGGRESSIVE_THRESHOLD = +4.0  # Score to enter Aggressive
-DEFENSIVE_THRESHOLD = -4.0   # Score to enter Defensive
-```
-
-### Adjust indicator weights
-
-Edit `config.py` WEIGHTS dict:
-```python
-WEIGHTS = {
-    "walcl": 1.5,
-    "rrp": 1.5,
-    "hy_spread": 1.5,
-    "dxy": 1.0,
-    "stablecoin": 1.0,
-}
-```
-
-### Clear cache
-
-Delete `cache.db` or run:
-```python
-from data.cache import clear_cache
-clear_cache()
-```
+- **Frontend**: Vercel (https://flowstate.vercel.app)
+- **Backend**: Needs hosting (Railway, Render, etc.)
+- **GitHub Actions**: Still runs daily briefings via Discord
 
 ## Important Patterns
 
@@ -99,31 +83,31 @@ Prevents whipsaw regime changes:
 - Requires **2 consecutive days** above/below threshold, OR
 - Score margin **> 1.0 point** from threshold
 
-Located in `scoring/regime.py`.
+Located in `backend/scoring/regime.py`.
 
 ### BTC Gate
 
-Aggressive regime requires BTC above 200-day MA. Even with high score, regime caps at Balanced if BTC below MA. Logic in `scoring/regime.py`.
+Aggressive regime requires BTC above 200-day MA. Even with high score, regime caps at Balanced if BTC below MA.
 
-### Date-based deltas
+### Scoring weights
 
-Uses actual calendar days, not data point indices. Handles weekly FRED data correctly. See `data/transforms.py`.
+Edit `backend/config.py`:
+```python
+WEIGHTS = {
+    "walcl": 1.5,      # Fed Balance Sheet
+    "rrp": 1.5,        # Reverse Repo
+    "hy_spread": 1.5,  # Credit Spreads
+    "dxy": 1.0,        # Dollar Index
+    "stablecoin": 1.0, # Stablecoin Supply
+}
+```
 
 ## Debugging
 
-- Check `regime_state.json` for current state
-- Query `cache.db` with SQLite for cached data
-- Streamlit reruns on file save - use `st.session_state` for persistence
-- API issues? Check cache TTL in `config.py`
-
-## Testing
-
-Run the app and verify:
-1. All 6 metrics load without errors
-2. Sparklines render
-3. Regime banner displays
-4. Score gauge shows correctly
-5. Refresh works (sidebar button)
+- Check `backend/regime_state.json` for current state (score, consecutive days)
+- Query `backend/cache.db` for cached API data
+- Frontend fetches from backend - check CORS if issues
+- API issues? Check cache TTL in `backend/config.py`
 
 ## Don't
 
@@ -131,3 +115,4 @@ Run the app and verify:
 - Don't bypass hysteresis - it prevents false signals
 - Don't change delta windows without understanding impact on scoring
 - Don't cache indefinitely - data needs to refresh
+- Don't confuse root-level files (old Streamlit) with backend/ (active)
