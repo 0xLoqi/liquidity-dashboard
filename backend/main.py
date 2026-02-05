@@ -40,6 +40,7 @@ app.add_middleware(
         FRONTEND_URL,
         "http://localhost:3000",
         "https://flowstate.vercel.app",
+        "https://flowstate-dashboard.vercel.app",
     ],
     allow_methods=["*"],
     allow_headers=["*"],
