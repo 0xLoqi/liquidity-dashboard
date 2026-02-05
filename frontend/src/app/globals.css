@@ -1,0 +1,413 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-background: #08090E;
+  --color-foreground: #E2E8F0;
+  --color-surface: #0F1118;
+  --color-surface-raised: #161822;
+  --color-border: #1E2130;
+  --color-border-bright: #2A2E42;
+  --color-muted: #64748B;
+  --color-accent: #3B82F6;
+
+  --color-bullish: #10B981;
+  --color-bearish: #EF4444;
+  --color-balanced: #F59E0B;
+
+  --font-display: "DM Sans", var(--font-geist-sans), system-ui, sans-serif;
+  --font-body: var(--font-geist-sans), system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", var(--font-geist-mono), ui-monospace, monospace;
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-body);
+}
+
+/* ========== REGIME GLOW ANIMATIONS ========== */
+
+@keyframes pulse-aggressive {
+  0%, 100% { box-shadow: 0 0 20px rgba(16, 185, 129, 0.15), 0 0 60px rgba(16, 185, 129, 0.05); }
+  50% { box-shadow: 0 0 30px rgba(16, 185, 129, 0.25), 0 0 80px rgba(16, 185, 129, 0.1); }
+}
+
+@keyframes pulse-balanced {
+  0%, 100% { box-shadow: 0 0 20px rgba(245, 158, 11, 0.15), 0 0 60px rgba(245, 158, 11, 0.05); }
+  50% { box-shadow: 0 0 30px rgba(245, 158, 11, 0.25), 0 0 80px rgba(245, 158, 11, 0.1); }
+}
+
+@keyframes pulse-defensive {
+  0%, 100% { box-shadow: 0 0 20px rgba(239, 68, 68, 0.15), 0 0 60px rgba(239, 68, 68, 0.05); }
+  50% { box-shadow: 0 0 30px rgba(239, 68, 68, 0.25), 0 0 80px rgba(239, 68, 68, 0.1); }
+}
+
+@keyframes signal-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+@keyframes boot-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scan-line {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+
+/* ========== FLOWING WATER BACKGROUND ========== */
+
+@keyframes water-drift-1 {
+  0%   { transform: translate(0%, 0%) scale(1); }
+  25%  { transform: translate(3%, -2%) scale(1.05); }
+  50%  { transform: translate(-2%, 3%) scale(1); }
+  75%  { transform: translate(2%, 1%) scale(0.97); }
+  100% { transform: translate(0%, 0%) scale(1); }
+}
+
+@keyframes water-drift-2 {
+  0%   { transform: translate(0%, 0%) scale(1.02); }
+  25%  { transform: translate(-3%, 2%) scale(0.98); }
+  50%  { transform: translate(2%, -3%) scale(1.04); }
+  75%  { transform: translate(-1%, -2%) scale(1); }
+  100% { transform: translate(0%, 0%) scale(1.02); }
+}
+
+@keyframes water-drift-3 {
+  0%   { transform: translate(0%, 0%); }
+  33%  { transform: translate(4%, 2%); }
+  66%  { transform: translate(-3%, -1%); }
+  100% { transform: translate(0%, 0%); }
+}
+
+.water-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.water-layer {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  will-change: transform;
+}
+
+.water-layer-1 {
+  width: 60vw;
+  height: 60vh;
+  top: -10%;
+  left: -10%;
+  background: radial-gradient(ellipse at center, rgba(59, 130, 246, 0.14) 0%, transparent 70%);
+  animation: water-drift-1 30s ease-in-out infinite;
+}
+
+.water-layer-2 {
+  width: 50vw;
+  height: 50vh;
+  bottom: -15%;
+  right: -10%;
+  background: radial-gradient(ellipse at center, rgba(96, 165, 250, 0.10) 0%, transparent 70%);
+  animation: water-drift-2 24s ease-in-out infinite;
+}
+
+.water-layer-3 {
+  width: 40vw;
+  height: 40vh;
+  top: 30%;
+  left: 40%;
+  background: radial-gradient(ellipse at center, rgba(37, 99, 235, 0.08) 0%, transparent 70%);
+  animation: water-drift-3 20s ease-in-out infinite;
+}
+
+/* ========== DISCLAIMER WATER SCENE ========== */
+
+@keyframes wave-scroll {
+  0%   { background-position-x: 0; }
+  100% { background-position-x: -1200px; }
+}
+
+@keyframes caustic-shift {
+  0%   { transform: translate(0, 0) rotate(0deg); }
+  25%  { transform: translate(30px, -20px) rotate(2deg); }
+  50%  { transform: translate(-15px, 15px) rotate(-1deg); }
+  75%  { transform: translate(20px, 8px) rotate(1deg); }
+  100% { transform: translate(0, 0) rotate(0deg); }
+}
+
+@keyframes surface-glint {
+  0%, 100% { opacity: 0; }
+  50%      { opacity: 1; }
+}
+
+@keyframes bubble-float-1 {
+  0%, 100% { transform: translateY(0) scale(1); opacity: 0.4; }
+  50%      { transform: translateY(-30px) scale(1.1); opacity: 0.7; }
+}
+
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.water-scene {
+  overflow: hidden;
+  background: linear-gradient(180deg,
+    rgba(15, 23, 42, 1) 0%,
+    rgba(12, 28, 55, 1) 35%,
+    rgba(16, 42, 80, 1) 60%,
+    rgba(20, 55, 100, 1) 80%,
+    rgba(25, 65, 115, 1) 100%
+  );
+}
+
+/* Caustic light blobs */
+.water-scene::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -20%;
+  width: 140%;
+  height: 100%;
+  background:
+    radial-gradient(ellipse 250px 180px at 15% 55%, rgba(96, 165, 250, 0.14) 0%, transparent 50%),
+    radial-gradient(ellipse 350px 250px at 50% 35%, rgba(59, 130, 246, 0.10) 0%, transparent 50%),
+    radial-gradient(ellipse 300px 200px at 80% 65%, rgba(96, 165, 250, 0.12) 0%, transparent 50%),
+    radial-gradient(ellipse 200px 140px at 35% 80%, rgba(147, 197, 253, 0.08) 0%, transparent 50%);
+  animation: caustic-shift 14s ease-in-out infinite;
+  filter: blur(40px);
+}
+
+/* Layered wave SVGs at the bottom */
+.water-scene::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 180px;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 120' preserveAspectRatio='none'%3E%3Cpath d='M0,60 C150,100 350,0 600,60 C850,120 1050,20 1200,60 L1200,120 L0,120 Z' fill='rgba(59,130,246,0.25)'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 120' preserveAspectRatio='none'%3E%3Cpath d='M0,80 C200,30 400,110 600,70 C800,30 1000,100 1200,50 L1200,120 L0,120 Z' fill='rgba(96,165,250,0.18)'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 120' preserveAspectRatio='none'%3E%3Cpath d='M0,40 C300,100 500,10 700,80 C900,10 1100,90 1200,40 L1200,120 L0,120 Z' fill='rgba(37,99,235,0.12)'/%3E%3C/svg%3E");
+  background-size: 1200px 120px, 1200px 100px, 1200px 80px;
+  background-repeat: repeat-x;
+  background-position: bottom left, bottom left, bottom left;
+  animation: wave-scroll 16s linear infinite;
+  filter: blur(4px);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.3) 25%, rgba(0,0,0,1) 60%);
+  mask-image: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.3) 25%, rgba(0,0,0,1) 60%);
+}
+
+/* Glints and bubbles FX layer */
+.water-scene-fx {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.water-scene-fx::before {
+  content: '';
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: transparent;
+  box-shadow:
+    20vw 25vh 0 1px rgba(147, 197, 253, 0.5),
+    55vw 35vh 0 1px rgba(147, 197, 253, 0.4),
+    75vw 15vh 0 1px rgba(147, 197, 253, 0.5),
+    35vw 45vh 0 1px rgba(147, 197, 253, 0.3),
+    90vw 20vh 0 1px rgba(147, 197, 253, 0.4),
+    10vw 55vh 0 0px rgba(147, 197, 253, 0.3),
+    65vw 50vh 0 1px rgba(147, 197, 253, 0.35),
+    45vw 12vh 0 0px rgba(147, 197, 253, 0.4);
+  animation: surface-glint 5s ease-in-out infinite;
+}
+
+.water-scene-fx::after {
+  content: '';
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: transparent;
+  box-shadow:
+    12vw 82vh 0 2px rgba(147, 197, 253, 0.15),
+    30vw 78vh 0 1px rgba(147, 197, 253, 0.12),
+    55vw 85vh 0 3px rgba(147, 197, 253, 0.10),
+    72vw 75vh 0 1px rgba(147, 197, 253, 0.14),
+    88vw 80vh 0 2px rgba(147, 197, 253, 0.11),
+    42vw 88vh 0 2px rgba(147, 197, 253, 0.13),
+    65vw 77vh 0 1px rgba(147, 197, 253, 0.10);
+  animation: bubble-float-1 8s ease-in-out infinite;
+}
+
+/* ========== DISCLAIMER ANIMATIONS ========== */
+
+@keyframes accent-grow {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+@keyframes disclaimer-card-enter {
+  0% {
+    opacity: 0;
+    transform: scale(0.95) translateY(10px);
+    filter: blur(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    filter: blur(0);
+  }
+}
+
+@keyframes disclaimer-text-stagger {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes disclaimer-button-enter {
+  0% {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  70% {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+.disclaimer-enter {
+  animation: disclaimer-card-enter 0.5s ease-out both;
+}
+
+.disclaimer-text-1 {
+  animation: disclaimer-text-stagger 0.4s ease-out 0.2s both;
+}
+.disclaimer-text-2 {
+  animation: disclaimer-text-stagger 0.4s ease-out 0.35s both;
+}
+.disclaimer-text-3 {
+  animation: disclaimer-text-stagger 0.4s ease-out 0.5s both;
+}
+.disclaimer-text-4 {
+  animation: disclaimer-text-stagger 0.4s ease-out 0.6s both;
+}
+.disclaimer-text-5 {
+  animation: disclaimer-text-stagger 0.4s ease-out 0.8s both;
+}
+.disclaimer-button {
+  animation: disclaimer-button-enter 0.5s ease-out 0.7s both;
+}
+
+/* ========== UTILITY CLASSES ========== */
+
+.boot-in {
+  animation: boot-in 0.5s ease-out both;
+}
+
+.fade-in {
+  animation: fade-in 0.4s ease-out both;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+.glass-card {
+  background: linear-gradient(135deg, rgba(15, 17, 24, 0.8) 0%, rgba(22, 24, 34, 0.6) 100%);
+  border: 1px solid var(--color-border);
+  backdrop-filter: blur(12px);
+  transition: border-color 0.2s ease;
+}
+
+.glass-card:hover {
+  border-color: var(--color-border-bright);
+}
+
+/* Subtle noise texture overlay */
+.noise-bg::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  opacity: 0.015;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 256px 256px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Ambient gradient behind the hero */
+.ambient-glow {
+  position: absolute;
+  width: 600px;
+  height: 600px;
+  border-radius: 50%;
+  filter: blur(120px);
+  opacity: 0.06;
+  pointer-events: none;
+  top: -200px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* Score gauge marker */
+.gauge-marker {
+  transition: left 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border-bright);
+  border-radius: 3px;
+}
+
+/* Recharts overrides */
+.recharts-cartesian-grid-horizontal line,
+.recharts-cartesian-grid-vertical line {
+  stroke: var(--color-border) !important;
+}
+
+.recharts-tooltip-wrapper {
+  outline: none !important;
+}

@@ -16,20 +16,23 @@ on:
 jobs:
   briefing:
     runs-on: ubuntu-latest
-    
+    defaults:
+      run:
+        working-directory: backend
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      
+
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
-      
+
       - name: Determine run type
         id: runtype
         run: |
@@ -40,7 +43,7 @@ jobs:
           else
             echo "daily=false" >> $GITHUB_OUTPUT
           fi
-      
+
       - name: Run briefing
         env:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
@@ -53,7 +56,7 @@ jobs:
           else
             python notifications/run_briefing.py --check-only
           fi
-      
+
       - name: Commit state changes
         run: |
           git config --local user.email "action@github.com"
