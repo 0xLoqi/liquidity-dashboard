@@ -36,14 +36,23 @@ export const metadata: Metadata = {
     title: "FlowState — Crypto Liquidity Regime Tracker",
     description:
       "Track 5 macro liquidity indicators to know when crypto conditions favor risk-on vs playing defense.",
-    url: "https://flowstate-dashboard.vercel.app",
+    url: "https://www.flowstate.markets",
     type: "website",
+    images: [
+      {
+        url: "https://www.flowstate.markets/og.jpg",
+        width: 1200,
+        height: 630,
+        alt: "FlowState — Crypto Liquidity Regime Tracker",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "FlowState — Crypto Liquidity Regime Tracker",
     description:
       "Track 5 macro liquidity indicators to know when crypto conditions favor risk-on vs playing defense.",
+    images: ["https://www.flowstate.markets/og.jpg"],
   },
 };
 
