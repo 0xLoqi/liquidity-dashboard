@@ -200,3 +200,270 @@ def send_confirmation_email(email: str, cadence: str) -> bool:
     except Exception as e:
         print(f"Error sending email: {e}")
         return False
+
+
+# ---------------------------------------------------------------------------
+# Briefing emails
+# ---------------------------------------------------------------------------
+
+REGIME_COLORS_HEX = {
+    "aggressive": "#22C55E",
+    "balanced": "#F59E0B",
+    "defensive": "#EF4444",
+}
+
+REGIME_EMOJIS = {
+    "aggressive": "🚀",
+    "balanced": "⚖️",
+    "defensive": "🛡️",
+}
+
+REGIME_DESCRIPTIONS = {
+    "aggressive": "Liquidity conditions look favorable. Macro tailwinds support risk-on positioning.",
+    "balanced": "Mixed signals across indicators. Stay selective and avoid overexposure.",
+    "defensive": "Liquidity headwinds present. Consider reducing risk and preserving capital.",
+}
+
+METRIC_NAMES = {
+    "walcl": "Fed Balance Sheet",
+    "rrp": "Reverse Repo",
+    "hy_spread": "Credit Spreads",
+    "dxy": "Dollar Strength",
+    "stablecoin": "Stablecoin Flows",
+}
+
+METRIC_ICONS = {
+    "walcl": "📊",
+    "rrp": "🏦",
+    "hy_spread": "📉",
+    "dxy": "💵",
+    "stablecoin": "🪙",
+}
+
+
+def _build_briefing_html(
+    regime: str,
+    score: float,
+    scores: dict,
+    btc_price: float = None,
+    btc_200dma: float = None,
+    dashboard_url: str = "https://flowstate-dashboard.vercel.app",
+    is_regime_change: bool = False,
+    old_regime: str = None,
+) -> str:
+    """Build HTML email body for a regime briefing."""
+    color = REGIME_COLORS_HEX.get(regime, "#3B82F6")
+    emoji = REGIME_EMOJIS.get(regime, "📊")
+    description = REGIME_DESCRIPTIONS.get(regime, "")
+
+    # Build metric rows
+    individual = scores.get("individual", {})
+    metric_rows = ""
+    for name, data in individual.items():
+        sig = data.get("score", 0)
+        if sig > 0:
+            dot_color = "#22C55E"
+            score_text = f"+{data.get('weighted', 0):.1f}"
+        elif sig < 0:
+            dot_color = "#EF4444"
+            score_text = f"{data.get('weighted', 0):.1f}"
+        else:
+            dot_color = "#64748B"
+            score_text = "0"
+        icon = METRIC_ICONS.get(name, "📊")
+        friendly = METRIC_NAMES.get(name, name.replace("_", " ").title())
+        reason = data.get("reason", "")
+        metric_rows += f"""
+        <tr>
+            <td style="padding: 10px 0; border-bottom: 1px solid rgba(71, 85, 105, 0.2);">
+                <span style="font-size: 14px;">{icon}</span>
+                <span style="font-size: 13px; color: #E2E8F0; font-weight: 600; margin-left: 6px;">{friendly}</span>
+            </td>
+            <td style="padding: 10px 0; text-align: right; border-bottom: 1px solid rgba(71, 85, 105, 0.2);">
+                <span style="color: {dot_color}; font-size: 13px; font-weight: 700;">{score_text}</span>
+            </td>
+        </tr>
+        <tr>
+            <td colspan="2" style="padding: 0 0 8px 26px;">
+                <span style="font-size: 11px; color: #64748B;">{reason}</span>
+            </td>
+        </tr>
+        """
+
+    # BTC section
+    btc_price_str = f"${btc_price:,.0f}" if btc_price else "N/A"
+    btc_ma_str = f"${btc_200dma:,.0f}" if btc_200dma else "N/A"
+    btc_above = btc_price and btc_200dma and btc_price > btc_200dma
+    btc_color = "#22C55E" if btc_above else "#EF4444"
+    btc_label = "above" if btc_above else "below"
+
+    # Subject line varies
+    if is_regime_change and old_regime:
+        subject_prefix = f"Regime Change: {old_regime.title()} → {regime.title()}"
+        header_text = f"{old_regime.upper()} → {regime.upper()}"
+        header_subtext = "Liquidity regime shift detected"
+    else:
+        subject_prefix = f"{emoji} {regime.upper()} — Score: {score:+.1f}"
+        header_text = regime.upper()
+        header_subtext = "Daily liquidity briefing"
+
+    html = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body style="margin: 0; padding: 0; background-color: #0a0f1a; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;">
+        <div style="max-width: 520px; margin: 0 auto; padding: 48px 24px;">
+
+            <!-- Header Bar -->
+            <div style="background: {color}; height: 4px; border-radius: 2px; margin-bottom: 40px;"></div>
+
+            <!-- Logo -->
+            <div style="text-align: center; margin-bottom: 32px;">
+                <span style="font-size: 36px;">🌊</span>
+                <p style="margin: 8px 0 0 0; font-size: 10px; color: #64748B; text-transform: uppercase; letter-spacing: 2px;">{header_subtext}</p>
+            </div>
+
+            <!-- Regime Card -->
+            <div style="background: linear-gradient(135deg, {color}18 0%, {color}05 100%); border: 1px solid {color}50; border-radius: 16px; padding: 24px; margin-bottom: 24px; text-align: center;">
+                <span style="font-size: 32px;">{emoji}</span>
+                <h1 style="margin: 8px 0 4px 0; font-size: 28px; font-weight: 800; color: {color}; letter-spacing: 1px;">
+                    {header_text}
+                </h1>
+                <p style="margin: 0 0 12px 0; font-size: 16px; color: #94A3B8; font-weight: 600;">
+                    Score: {score:+.1f}
+                </p>
+                <p style="margin: 0; font-size: 14px; color: #94A3B8; line-height: 1.6;">
+                    {description}
+                </p>
+            </div>
+
+            <!-- BTC Status -->
+            <div style="background: rgba(30, 41, 59, 0.6); border: 1px solid rgba(71, 85, 105, 0.2); border-radius: 12px; padding: 16px; margin-bottom: 16px; display: flex; align-items: center;">
+                <span style="font-size: 20px; margin-right: 12px;">₿</span>
+                <div>
+                    <span style="font-size: 16px; font-weight: 700; color: #E2E8F0;">{btc_price_str}</span>
+                    <span style="font-size: 12px; color: {btc_color}; margin-left: 8px;">{btc_label} {btc_ma_str} MA</span>
+                </div>
+            </div>
+
+            <!-- Signals Table -->
+            <div style="background: rgba(30, 41, 59, 0.4); border: 1px solid rgba(71, 85, 105, 0.2); border-radius: 12px; padding: 20px; margin-bottom: 24px;">
+                <p style="margin: 0 0 12px 0; font-size: 11px; font-weight: 700; color: #64748B; text-transform: uppercase; letter-spacing: 1.5px;">
+                    Signal Breakdown
+                </p>
+                <table style="width: 100%; border-collapse: collapse;">
+                    {metric_rows}
+                </table>
+            </div>
+
+            <!-- CTA -->
+            <div style="text-align: center; margin-bottom: 36px;">
+                <a href="{dashboard_url}" style="display: inline-block; background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%); color: white; font-weight: 700; font-size: 14px; padding: 14px 36px; border-radius: 10px; text-decoration: none; box-shadow: 0 4px 14px rgba(59, 130, 246, 0.4);">
+                    Open Dashboard →
+                </a>
+            </div>
+
+            <!-- Footer -->
+            <div style="text-align: center; padding-top: 24px; border-top: 1px solid rgba(71, 85, 105, 0.2);">
+                <p style="margin: 0 0 8px 0; font-size: 12px; color: #64748B;">
+                    Reply to unsubscribe or share feedback
+                </p>
+                <p style="margin: 0; font-size: 10px; color: #334155;">
+                    Not financial advice. For educational purposes only.
+                </p>
+            </div>
+
+        </div>
+    </body>
+    </html>
+    """
+    return html, subject_prefix
+
+
+def send_briefing_email(
+    email: str,
+    regime: str,
+    score: float,
+    scores: dict,
+    btc_price: float = None,
+    btc_200dma: float = None,
+    dashboard_url: str = "https://flowstate-dashboard.vercel.app",
+    is_regime_change: bool = False,
+    old_regime: str = None,
+) -> bool:
+    """Send a regime briefing email to one recipient."""
+    resend_api_key = os.environ.get("RESEND_API_KEY")
+    if not resend_api_key:
+        print("Warning: RESEND_API_KEY not set, skipping briefing email")
+        return False
+
+    try:
+        import resend
+        resend.api_key = resend_api_key
+
+        html, subject = _build_briefing_html(
+            regime=regime, score=score, scores=scores,
+            btc_price=btc_price, btc_200dma=btc_200dma,
+            dashboard_url=dashboard_url,
+            is_regime_change=is_regime_change, old_regime=old_regime,
+        )
+
+        resend.Emails.send({
+            "from": "FlowState <alerts@flowstate.markets>",
+            "to": email,
+            "subject": subject,
+            "html": html,
+        })
+        return True
+    except Exception as e:
+        print(f"Error sending briefing email to {email}: {e}")
+        return False
+
+
+def send_briefings_to_subscribers(
+    regime: str,
+    score: float,
+    scores: dict,
+    btc_price: float = None,
+    btc_200dma: float = None,
+    dashboard_url: str = "https://flowstate-dashboard.vercel.app",
+    is_regime_change: bool = False,
+    old_regime: str = None,
+    daily: bool = True,
+) -> dict:
+    """Send briefing emails to all matching subscribers. Returns stats."""
+    data = load_subscribers()
+    subscribers = data.get("subscribers", [])
+    sent = 0
+    failed = 0
+    skipped = 0
+
+    for sub in subscribers:
+        cadence = sub.get("cadence", "daily")
+
+        # Filter by cadence
+        if is_regime_change and cadence == "on_change":
+            pass  # always send regime changes to on_change subscribers
+        elif daily and cadence in ("daily",):
+            pass  # daily subscribers get daily briefings
+        elif is_regime_change and cadence == "daily":
+            pass  # daily subscribers also get regime changes
+        else:
+            skipped += 1
+            continue
+
+        success = send_briefing_email(
+            email=sub["email"], regime=regime, score=score, scores=scores,
+            btc_price=btc_price, btc_200dma=btc_200dma,
+            dashboard_url=dashboard_url,
+            is_regime_change=is_regime_change, old_regime=old_regime,
+        )
+        if success:
+            sent += 1
+        else:
+            failed += 1
+
+    return {"sent": sent, "failed": failed, "skipped": skipped}

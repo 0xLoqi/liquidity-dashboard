@@ -49,6 +49,7 @@ jobs:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
           COINGECKO_API_KEY: ${{ secrets.COINGECKO_API_KEY }}
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           DASHBOARD_URL: ${{ vars.DASHBOARD_URL }}
         run: |
           if [ "${{ steps.runtype.outputs.daily }}" = "true" ]; then
