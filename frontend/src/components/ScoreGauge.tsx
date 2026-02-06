@@ -2,6 +2,29 @@
 
 import { REGIME_COLORS } from "@/lib/constants";
 
+/** Lerp a single channel */
+function lerp(a: number, b: number, t: number) {
+  return Math.round(a + (b - a) * t);
+}
+
+/** Interpolate red → amber → green across 0..1 */
+function interpolateColor(t: number): string {
+  // Three stops: 0 = red (#EF4444), 0.5 = amber (#F59E0B), 1 = green (#22C55E)
+  if (t <= 0.5) {
+    const p = t / 0.5; // 0..1 within red→amber
+    const r = lerp(0xef, 0xf5, p);
+    const g = lerp(0x44, 0x9e, p);
+    const b = lerp(0x44, 0x0b, p);
+    return `rgb(${r},${g},${b})`;
+  } else {
+    const p = (t - 0.5) / 0.5; // 0..1 within amber→green
+    const r = lerp(0xf5, 0x22, p);
+    const g = lerp(0x9e, 0xc5, p);
+    const b = lerp(0x0b, 0x5e, p);
+    return `rgb(${r},${g},${b})`;
+  }
+}
+
 interface ScoreGaugeProps {
   score: number;
   min: number;
@@ -17,12 +40,9 @@ export function ScoreGauge({ score, min, max, thresholds }: ScoreGaugeProps) {
   const defEnd = normalize(thresholds.defensive);
   const aggStart = normalize(thresholds.aggressive);
 
-  const scoreColor =
-    score >= thresholds.aggressive
-      ? REGIME_COLORS.aggressive
-      : score <= thresholds.defensive
-        ? REGIME_COLORS.defensive
-        : REGIME_COLORS.balanced;
+  // Interpolate color from red → amber → green based on score position
+  const t = Math.max(0, Math.min(1, (score - min) / range)); // 0 = min (defensive), 1 = max (aggressive)
+  const scoreColor = interpolateColor(t);
 
   return (
     <div
@@ -82,9 +102,9 @@ export function ScoreGauge({ score, min, max, thresholds }: ScoreGaugeProps) {
           className="gauge-marker absolute top-1/2 -translate-y-1/2 -translate-x-1/2 z-10"
           style={{ left: `${scorePos}%` }}
         >
-          {/* Glow */}
+          {/* Pulsing glow */}
           <div
-            className="absolute inset-0 -m-2 rounded-full blur-md opacity-60"
+            className="absolute inset-0 -m-3 rounded-full blur-md gauge-pulse"
             style={{ background: scoreColor }}
           />
           {/* Diamond */}
@@ -92,8 +112,8 @@ export function ScoreGauge({ score, min, max, thresholds }: ScoreGaugeProps) {
             className="relative w-3.5 h-3.5 rotate-45 rounded-[2px] border-2"
             style={{
               background: scoreColor,
-              borderColor: `${scoreColor}`,
-              boxShadow: `0 0 8px ${scoreColor}80`,
+              borderColor: scoreColor,
+              boxShadow: `0 0 10px ${scoreColor}90`,
             }}
           />
         </div>
@@ -105,9 +125,9 @@ export function ScoreGauge({ score, min, max, thresholds }: ScoreGaugeProps) {
         style={{ fontFamily: "var(--font-mono)" }}
       >
         <span>{min.toFixed(1)}</span>
-        <span>{thresholds.defensive.toFixed(1)}</span>
+        <span className="hidden sm:inline">{thresholds.defensive.toFixed(1)}</span>
         <span>0.0</span>
-        <span>+{thresholds.aggressive.toFixed(1)}</span>
+        <span className="hidden sm:inline">+{thresholds.aggressive.toFixed(1)}</span>
         <span>+{max.toFixed(1)}</span>
       </div>
     </div>

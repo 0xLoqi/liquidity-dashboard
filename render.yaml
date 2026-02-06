@@ -16,4 +16,4 @@ services:
         sync: false
       - key: FRONTEND_URL
         value: https://www.flowstate.markets
-    healthCheckPath: /docs
+    healthCheckPath: /health

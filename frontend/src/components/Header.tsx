@@ -65,14 +65,14 @@ export function Header({ regime }: { regime?: string }) {
                 <path d="M8 1a2 2 0 0 1 2 2v.5a5.5 5.5 0 0 1 3 4.5v2l1.5 2H1.5L3 10V8a5.5 5.5 0 0 1 3-4.5V3a2 2 0 0 1 2-2zM6 13a2 2 0 1 0 4 0H6z" />
               </svg>
               Get Alerts
-              {spots !== null && spots > 0 && spots <= 50 && (
-                <span className="absolute -top-1.5 -right-1.5 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[9px] font-bold text-white bg-bearish rounded-full ring-2 ring-background animate-pulse">
-                  {spots}
-                </span>
-              )}
-              {spots !== null && spots <= 0 && (
-                <span className="absolute -top-1.5 -right-1.5 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[9px] font-bold text-white bg-bearish rounded-full ring-2 ring-background">
-                  !
+              {spots !== null && (
+                <span className="absolute -top-2 -right-2 flex items-center justify-center min-w-[16px] h-[16px] px-1 text-[8px] font-semibold tabular-nums text-white rounded-full shadow-lg shadow-red-500/40"
+                  style={{
+                    background: "linear-gradient(135deg, #f87171, #dc2626)",
+                    fontFamily: "var(--font-mono)",
+                  }}
+                >
+                  {spots > 0 ? spots : "!"}
                 </span>
               )}
             </button>
@@ -82,7 +82,7 @@ export function Header({ regime }: { regime?: string }) {
               side="bottom"
               align="end"
               sideOffset={8}
-              className="z-50 w-80 p-4 glass-card rounded-xl shadow-2xl shadow-black/50 fade-in"
+              className="z-50 w-[calc(100vw-2rem)] sm:w-80 p-4 glass-card rounded-xl shadow-2xl shadow-black/50 fade-in"
             >
               <EmailSignup onSuccess={() => setOpen(false)} />
               <Popover.Arrow className="fill-border" />
