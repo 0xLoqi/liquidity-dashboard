@@ -42,6 +42,8 @@ app.add_middleware(
         "https://flowstate.vercel.app",
         "https://flowstate-dashboard.vercel.app",
         "https://frontend-theta-sooty-66.vercel.app",
+        "https://www.flowstate.markets",
+        "https://flowstate.markets",
     ],
     allow_methods=["*"],
     allow_headers=["*"],
