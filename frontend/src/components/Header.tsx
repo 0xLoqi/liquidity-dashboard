@@ -84,7 +84,10 @@ export function Header({ regime }: { regime?: string }) {
               sideOffset={8}
               className="z-50 w-[calc(100vw-2rem)] sm:w-80 p-4 glass-card rounded-xl shadow-2xl shadow-black/50 fade-in"
             >
-              <EmailSignup onSuccess={() => setOpen(false)} />
+              <EmailSignup
+                onSuccess={() => setOpen(false)}
+                onSpotsChange={(newSpots) => setSpots(newSpots)}
+              />
               <Popover.Arrow className="fill-border" />
             </Popover.Content>
           </Popover.Portal>
