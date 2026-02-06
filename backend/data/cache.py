@@ -31,6 +31,17 @@ class CacheManager:
                     ttl INTEGER
                 )
             """)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS hits (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    ts TEXT NOT NULL,
+                    path TEXT NOT NULL,
+                    referrer TEXT,
+                    visitor TEXT,
+                    utm_source TEXT,
+                    utm_campaign TEXT
+                )
+            """)
             conn.commit()
 
     def get(self, key: str) -> Optional[Any]:
@@ -102,6 +113,60 @@ class CacheManager:
         with sqlite3.connect(self.db_path) as conn:
             conn.execute("DELETE FROM cache")
             conn.commit()
+
+    def log_hit(self, path: str, referrer: str = "", visitor: str = "",
+                utm_source: str = "", utm_campaign: str = ""):
+        """Log a page hit for analytics."""
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute(
+                "INSERT INTO hits (ts, path, referrer, visitor, utm_source, utm_campaign) VALUES (?, ?, ?, ?, ?, ?)",
+                (datetime.now().isoformat(), path, referrer, visitor, utm_source, utm_campaign),
+            )
+            conn.commit()
+
+    def get_analytics(self, days: int = 7) -> Dict[str, Any]:
+        """Get analytics summary for the last N days."""
+        cutoff = (datetime.now() - timedelta(days=days)).isoformat()
+        with sqlite3.connect(self.db_path) as conn:
+            conn.row_factory = sqlite3.Row
+
+            total = conn.execute(
+                "SELECT COUNT(*) as c FROM hits WHERE ts >= ?", (cutoff,)
+            ).fetchone()["c"]
+
+            unique = conn.execute(
+                "SELECT COUNT(DISTINCT visitor) as c FROM hits WHERE ts >= ? AND visitor != ''", (cutoff,)
+            ).fetchone()["c"]
+
+            by_path = conn.execute(
+                "SELECT path, COUNT(*) as c FROM hits WHERE ts >= ? GROUP BY path ORDER BY c DESC",
+                (cutoff,),
+            ).fetchall()
+
+            by_referrer = conn.execute(
+                "SELECT referrer, COUNT(*) as c FROM hits WHERE ts >= ? AND referrer != '' GROUP BY referrer ORDER BY c DESC LIMIT 20",
+                (cutoff,),
+            ).fetchall()
+
+            by_utm = conn.execute(
+                "SELECT utm_source, utm_campaign, COUNT(*) as c FROM hits WHERE ts >= ? AND utm_source != '' GROUP BY utm_source, utm_campaign ORDER BY c DESC",
+                (cutoff,),
+            ).fetchall()
+
+            by_day = conn.execute(
+                "SELECT DATE(ts) as day, COUNT(*) as c, COUNT(DISTINCT visitor) as u FROM hits WHERE ts >= ? GROUP BY DATE(ts) ORDER BY day",
+                (cutoff,),
+            ).fetchall()
+
+            return {
+                "period_days": days,
+                "total_hits": total,
+                "unique_visitors": unique,
+                "by_path": [{"path": r["path"], "hits": r["c"]} for r in by_path],
+                "by_referrer": [{"referrer": r["referrer"], "hits": r["c"]} for r in by_referrer],
+                "by_utm": [{"source": r["utm_source"], "campaign": r["utm_campaign"], "hits": r["c"]} for r in by_utm],
+                "by_day": [{"date": r["day"], "hits": r["c"], "unique": r["u"]} for r in by_day],
+            }
 
     def get_stats(self) -> Dict[str, Any]:
         """Get cache statistics."""
