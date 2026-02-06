@@ -27,6 +27,7 @@ from scoring.engine import calculate_scores
 from scoring.regime import determine_regime
 from scoring.explanations import generate_explanation
 from config import CACHE_TTL, REGIME_THRESHOLDS, WEIGHTS
+import subscriber_db
 
 # ---------------------------------------------------------------------------
 # App setup
@@ -295,11 +296,17 @@ MAX_SUBSCRIBERS = 100
 @app.get("/api/spots")
 async def get_spots():
     """Get remaining subscriber spots."""
-    data = load_json_file(SUBSCRIBERS_FILE)
-    if not data:
-        data = {"subscribers": [], "waitlist": []}
-    subscriber_count = len(data.get("subscribers", []))
-    waitlist_count = len(data.get("waitlist", []))
+    if not subscriber_db.is_configured():
+        # Fallback to JSON file if Supabase not configured
+        data = load_json_file(SUBSCRIBERS_FILE)
+        if not data:
+            data = {"subscribers": [], "waitlist": []}
+        subscriber_count = len(data.get("subscribers", []))
+        waitlist_count = len(data.get("waitlist", []))
+    else:
+        subscriber_count = subscriber_db.get_subscriber_count()
+        waitlist_count = subscriber_db.get_waitlist_count()
+
     spots_remaining = max(0, MAX_SUBSCRIBERS - subscriber_count)
     return {
         "spots_remaining": spots_remaining,
@@ -320,6 +327,44 @@ async def subscribe(req: SubscribeRequest):
     if cadence not in ("daily", "weekly", "on_change"):
         raise HTTPException(status_code=400, detail="Invalid cadence")
 
+    # Use Supabase if configured, otherwise fall back to JSON
+    if subscriber_db.is_configured():
+        existing = subscriber_db.find_subscriber(email)
+        if existing:
+            if existing.get("is_waitlist"):
+                return {"success": True, "message": "You're on the waitlist! We'll notify you when a spot opens.", "waitlisted": True}
+            return {"success": True, "message": "You're already subscribed!", "waitlisted": False}
+
+        subscriber_count = subscriber_db.get_subscriber_count()
+        spots_remaining = max(0, MAX_SUBSCRIBERS - subscriber_count)
+
+        if spots_remaining > 0:
+            subscriber_db.add_subscriber(email, cadence, is_waitlist=False)
+
+            try:
+                from subscribers import send_confirmation_email
+                result = send_confirmation_email(email, cadence)
+                if not result:
+                    print(f"Warning: Confirmation email to {email} was not sent")
+            except Exception as e:
+                print(f"Error sending confirmation email: {e}")
+
+            return {
+                "success": True,
+                "message": f"You're in! Spot #{subscriber_count + 1} of {MAX_SUBSCRIBERS}.",
+                "waitlisted": False,
+                "spots_remaining": spots_remaining - 1,
+            }
+        else:
+            subscriber_db.add_subscriber(email, cadence, is_waitlist=True)
+            return {
+                "success": True,
+                "message": "All spots are taken! You've been added to the waitlist.",
+                "waitlisted": True,
+                "spots_remaining": 0,
+            }
+
+    # Fallback to JSON file storage
     data = load_json_file(SUBSCRIBERS_FILE)
     if not data:
         data = {"subscribers": [], "waitlist": []}
@@ -337,7 +382,6 @@ async def subscribe(req: SubscribeRequest):
     spots_remaining = max(0, MAX_SUBSCRIBERS - subscriber_count)
 
     if spots_remaining > 0:
-        # Active subscriber
         data.setdefault("subscribers", []).append({
             "email": email,
             "cadence": cadence,
@@ -346,7 +390,6 @@ async def subscribe(req: SubscribeRequest):
         })
         save_json_file(SUBSCRIBERS_FILE, data)
 
-        # Try sending confirmation email
         try:
             from subscribers import send_confirmation_email
             result = send_confirmation_email(email, cadence)
@@ -362,7 +405,6 @@ async def subscribe(req: SubscribeRequest):
             "spots_remaining": spots_remaining - 1,
         }
     else:
-        # Waitlist
         data.setdefault("waitlist", []).append({
             "email": email,
             "cadence": cadence,
@@ -410,15 +452,23 @@ async def get_subscribers(authorization: Optional[str] = Header(None)):
     if not verify_admin(authorization):
         raise HTTPException(status_code=401, detail="Unauthorized")
 
+    if subscriber_db.is_configured():
+        return subscriber_db.get_all_subscribers()
+
     data = load_json_file(SUBSCRIBERS_FILE)
     return data.get("subscribers", [])
 
 
 @app.delete("/api/admin/subscribers/{email}")
-async def delete_subscriber(email: str, authorization: Optional[str] = Header(None)):
+async def delete_subscriber_endpoint(email: str, authorization: Optional[str] = Header(None)):
     """Remove a subscriber (admin only)."""
     if not verify_admin(authorization):
         raise HTTPException(status_code=401, detail="Unauthorized")
+
+    if subscriber_db.is_configured():
+        if subscriber_db.delete_subscriber(email):
+            return {"success": True}
+        raise HTTPException(status_code=404, detail="Subscriber not found")
 
     data = load_json_file(SUBSCRIBERS_FILE)
     if not data:
