@@ -113,37 +113,22 @@ def send_confirmation_email(email: str, cadence: str) -> bool:
                         </p>
                     </div>
 
-                    <!-- Sample Update Preview -->
+                    <!-- What you'll get -->
                     <div style="background: linear-gradient(145deg, #1E293B 0%, #0F172A 100%); border: 1px solid rgba(59, 130, 246, 0.2); border-radius: 16px; padding: 24px; margin-bottom: 24px;">
                         <p style="margin: 0 0 16px 0; font-size: 11px; font-weight: 700; color: #64748B; text-transform: uppercase; letter-spacing: 1.5px;">
-                            Here's what your updates look like
+                            What you'll receive
                         </p>
-
-                        <!-- Mock Regime Card -->
-                        <div style="background: linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(34, 197, 94, 0.02) 100%); border: 1px solid rgba(34, 197, 94, 0.3); border-radius: 12px; padding: 20px; margin-bottom: 16px;">
-                            <div style="display: flex; align-items: center; margin-bottom: 12px;">
-                                <span style="font-size: 24px; margin-right: 12px;">🚀</span>
-                                <div>
-                                    <div style="font-size: 18px; font-weight: 700; color: #22C55E;">AGGRESSIVE</div>
-                                    <div style="font-size: 12px; color: #86EFAC;">Score: +5.2</div>
-                                </div>
-                            </div>
-                            <p style="margin: 0; font-size: 13px; color: #94A3B8; line-height: 1.5;">
-                                Fed liquidity expanding, dollar weakening, stablecoins flowing in. Risk-on conditions favor crypto exposure.
-                            </p>
-                        </div>
-
-                        <!-- Force Pills -->
-                        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-                            <span style="background: rgba(34, 197, 94, 0.15); color: #86EFAC; font-size: 11px; font-weight: 600; padding: 6px 12px; border-radius: 20px;">📈 Fed +1.5</span>
-                            <span style="background: rgba(34, 197, 94, 0.15); color: #86EFAC; font-size: 11px; font-weight: 600; padding: 6px 12px; border-radius: 20px;">💵 DXY +1.0</span>
-                            <span style="background: rgba(251, 191, 36, 0.15); color: #FCD34D; font-size: 11px; font-weight: 600; padding: 6px 12px; border-radius: 20px;">🪙 Stable 0</span>
+                        <div style="font-size: 14px; color: #94A3B8; line-height: 1.8;">
+                            <div style="margin-bottom: 8px;">📊 Current regime classification (Aggressive / Balanced / Defensive)</div>
+                            <div style="margin-bottom: 8px;">📈 Composite liquidity score with breakdown by indicator</div>
+                            <div style="margin-bottom: 8px;">₿ Bitcoin position vs 200-day moving average</div>
+                            <div>⚡ Instant alerts when the regime shifts</div>
                         </div>
                     </div>
 
                     <!-- CTA Button -->
                     <div style="text-align: center; margin-bottom: 36px;">
-                        <a href="https://flowstate.markets" style="display: inline-block; background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%); color: white; font-weight: 700; font-size: 15px; padding: 16px 40px; border-radius: 10px; text-decoration: none; letter-spacing: 0.3px; box-shadow: 0 4px 14px rgba(59, 130, 246, 0.4);">
+                        <a href="https://www.flowstate.markets" style="display: inline-block; background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%); color: white; font-weight: 700; font-size: 15px; padding: 16px 40px; border-radius: 10px; text-decoration: none; letter-spacing: 0.3px; box-shadow: 0 4px 14px rgba(59, 130, 246, 0.4);">
                             Open Dashboard →
                         </a>
                     </div>

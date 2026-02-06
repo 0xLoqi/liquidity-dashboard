@@ -7,9 +7,10 @@ import { AdminPanel } from "./AdminPanel";
 
 interface FooterProps {
   timestamp?: string;
+  onRefresh?: () => void;
 }
 
-export function Footer({ timestamp }: FooterProps) {
+export function Footer({ timestamp, onRefresh }: FooterProps) {
   const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   const formattedTime = timestamp
@@ -76,7 +77,7 @@ export function Footer({ timestamp }: FooterProps) {
             </Popover.Portal>
           </Popover.Root>
           <span className="text-muted/20">|</span>
-          <AdminPanel />
+          <AdminPanel onRefresh={onRefresh} />
         </div>
 
         <div className="flex items-center gap-3">
