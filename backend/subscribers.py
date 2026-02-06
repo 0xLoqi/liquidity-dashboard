@@ -232,7 +232,7 @@ def _build_briefing_html(
     scores: dict,
     btc_price: float = None,
     btc_200dma: float = None,
-    dashboard_url: str = "https://flowstate-dashboard.vercel.app",
+    dashboard_url: str = "https://www.flowstate.markets",
     is_regime_change: bool = False,
     old_regime: str = None,
 ) -> str:
@@ -375,7 +375,7 @@ def send_briefing_email(
     scores: dict,
     btc_price: float = None,
     btc_200dma: float = None,
-    dashboard_url: str = "https://flowstate-dashboard.vercel.app",
+    dashboard_url: str = "https://www.flowstate.markets",
     is_regime_change: bool = False,
     old_regime: str = None,
 ) -> bool:
@@ -414,14 +414,25 @@ def send_briefings_to_subscribers(
     scores: dict,
     btc_price: float = None,
     btc_200dma: float = None,
-    dashboard_url: str = "https://flowstate-dashboard.vercel.app",
+    dashboard_url: str = "https://www.flowstate.markets",
     is_regime_change: bool = False,
     old_regime: str = None,
     daily: bool = True,
 ) -> dict:
     """Send briefing emails to all matching subscribers. Returns stats."""
-    data = load_subscribers()
-    subscribers = data.get("subscribers", [])
+    # Try Supabase first, fall back to JSON
+    try:
+        import subscriber_db
+        if subscriber_db.is_configured():
+            subscribers = subscriber_db.get_all_subscribers()
+        else:
+            data = load_subscribers()
+            subscribers = data.get("subscribers", [])
+    except Exception as e:
+        print(f"Error loading subscribers from Supabase, falling back to JSON: {e}")
+        data = load_subscribers()
+        subscribers = data.get("subscribers", [])
+
     sent = 0
     failed = 0
     skipped = 0
@@ -436,6 +447,12 @@ def send_briefings_to_subscribers(
             pass  # daily subscribers get daily briefings
         elif is_regime_change and cadence == "daily":
             pass  # daily subscribers also get regime changes
+        elif daily and cadence == "weekly":
+            # Weekly subscribers: only send on Mondays
+            from datetime import datetime
+            if datetime.now().weekday() != 0:  # 0 = Monday
+                skipped += 1
+                continue
         else:
             skipped += 1
             continue
