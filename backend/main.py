@@ -304,8 +304,14 @@ async def get_spots():
         subscriber_count = len(data.get("subscribers", []))
         waitlist_count = len(data.get("waitlist", []))
     else:
-        subscriber_count = subscriber_db.get_subscriber_count()
-        waitlist_count = subscriber_db.get_waitlist_count()
+        try:
+            subscriber_count = subscriber_db.get_subscriber_count()
+            waitlist_count = subscriber_db.get_waitlist_count()
+        except subscriber_db.SupabaseError as e:
+            print(f"Supabase error in get_spots: {e}")
+            # Return default values on error to not break the UI
+            subscriber_count = 0
+            waitlist_count = 0
 
     spots_remaining = max(0, MAX_SUBSCRIBERS - subscriber_count)
     return {
@@ -329,40 +335,32 @@ async def subscribe(req: SubscribeRequest):
 
     # Use Supabase if configured, otherwise fall back to JSON
     if subscriber_db.is_configured():
-        existing = subscriber_db.find_subscriber(email)
-        if existing:
-            if existing.get("is_waitlist"):
-                return {"success": True, "message": "You're on the waitlist! We'll notify you when a spot opens.", "waitlisted": True}
-            return {"success": True, "message": "You're already subscribed!", "waitlisted": False}
+        try:
+            success, message, data = subscriber_db.atomic_subscribe(email, cadence, MAX_SUBSCRIBERS)
 
-        subscriber_count = subscriber_db.get_subscriber_count()
-        spots_remaining = max(0, MAX_SUBSCRIBERS - subscriber_count)
-
-        if spots_remaining > 0:
-            subscriber_db.add_subscriber(email, cadence, is_waitlist=False)
-
-            try:
-                from subscribers import send_confirmation_email
-                result = send_confirmation_email(email, cadence)
-                if not result:
-                    print(f"Warning: Confirmation email to {email} was not sent")
-            except Exception as e:
-                print(f"Error sending confirmation email: {e}")
+            # Send confirmation email for new subscribers (not waitlist, not already existed)
+            if success and not data.get("already_existed") and not data.get("waitlisted"):
+                try:
+                    from subscribers import send_confirmation_email
+                    result = send_confirmation_email(email, cadence)
+                    if not result:
+                        print(f"Warning: Confirmation email to {email} was not sent")
+                except Exception as e:
+                    print(f"Error sending confirmation email: {e}")
 
             return {
-                "success": True,
-                "message": f"You're in! Spot #{subscriber_count + 1} of {MAX_SUBSCRIBERS}.",
-                "waitlisted": False,
-                "spots_remaining": spots_remaining - 1,
+                "success": success,
+                "message": message,
+                "waitlisted": data.get("waitlisted", False),
+                "spots_remaining": data.get("spots_remaining"),
             }
-        else:
-            subscriber_db.add_subscriber(email, cadence, is_waitlist=True)
-            return {
-                "success": True,
-                "message": "All spots are taken! You've been added to the waitlist.",
-                "waitlisted": True,
-                "spots_remaining": 0,
-            }
+
+        except subscriber_db.SupabaseError as e:
+            print(f"Supabase error during subscribe: {e}")
+            raise HTTPException(
+                status_code=503,
+                detail="Subscription service temporarily unavailable. Please try again."
+            )
 
     # Fallback to JSON file storage
     data = load_json_file(SUBSCRIBERS_FILE)
@@ -453,7 +451,10 @@ async def get_subscribers(authorization: Optional[str] = Header(None)):
         raise HTTPException(status_code=401, detail="Unauthorized")
 
     if subscriber_db.is_configured():
-        return subscriber_db.get_all_subscribers()
+        try:
+            return subscriber_db.get_all_subscribers()
+        except subscriber_db.SupabaseError as e:
+            raise HTTPException(status_code=503, detail=f"Database error: {e}")
 
     data = load_json_file(SUBSCRIBERS_FILE)
     return data.get("subscribers", [])
@@ -466,9 +467,12 @@ async def delete_subscriber_endpoint(email: str, authorization: Optional[str] = 
         raise HTTPException(status_code=401, detail="Unauthorized")
 
     if subscriber_db.is_configured():
-        if subscriber_db.delete_subscriber(email):
-            return {"success": True}
-        raise HTTPException(status_code=404, detail="Subscriber not found")
+        try:
+            if subscriber_db.delete_subscriber(email):
+                return {"success": True}
+            raise HTTPException(status_code=404, detail="Subscriber not found")
+        except subscriber_db.SupabaseError as e:
+            raise HTTPException(status_code=503, detail=f"Database error: {e}")
 
     data = load_json_file(SUBSCRIBERS_FILE)
     if not data:
