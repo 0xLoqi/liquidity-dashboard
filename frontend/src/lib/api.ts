@@ -65,3 +65,34 @@ export async function getFeedback(token: string) {
   });
   return res.json();
 }
+
+export async function sendTestBriefing(
+  email: string,
+  type: string,
+  token: string
+) {
+  const res = await fetch(`${API_URL}/api/admin/test-briefing`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ email, type }),
+  });
+  return res.json();
+}
+
+export async function sendTestWelcome(
+  email: string,
+  token: string
+) {
+  const res = await fetch(`${API_URL}/api/admin/test-email`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ email }),
+  });
+  return res.json();
+}

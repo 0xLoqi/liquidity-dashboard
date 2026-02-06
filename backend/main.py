@@ -79,6 +79,11 @@ class TestEmailRequest(BaseModel):
     cadence: str = "daily"
 
 
+class TestBriefingRequest(BaseModel):
+    email: str
+    type: str = "daily"  # "daily" or "regime_change"
+
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -427,6 +432,46 @@ async def send_test_email(req: TestEmailRequest, authorization: Optional[str] = 
         if success:
             return {"success": True, "message": f"Test email sent to {req.email}"}
         return {"success": False, "message": "Failed to send email (check RESEND_API_KEY)"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/admin/test-briefing")
+async def send_test_briefing(req: TestBriefingRequest, authorization: Optional[str] = Header(None)):
+    """Send a test briefing email with live data (admin only)."""
+    if not verify_admin(authorization):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    try:
+        # Fetch live data
+        cached_data = CACHE.get("all_data")
+        if not cached_data:
+            cached_data = fetch_all_data()
+            CACHE.set("all_data", cached_data, ttl=min(CACHE_TTL.values()))
+
+        metrics = calculate_metrics(cached_data)
+        scores = calculate_scores(metrics)
+        regime, state, regime_info = determine_regime(scores, state_file=STATE_FILE)
+
+        btc_data = metrics.get("btc", {})
+        btc_price = btc_data.get("current_price")
+        btc_200dma = btc_data.get("ma_200")
+
+        from subscribers import send_briefing_email
+        is_change = req.type == "regime_change"
+        success = send_briefing_email(
+            email=req.email,
+            regime=regime,
+            score=scores["total"],
+            scores=scores,
+            btc_price=btc_price,
+            btc_200dma=btc_200dma,
+            is_regime_change=is_change,
+            old_regime="defensive" if is_change else None,
+        )
+        if success:
+            return {"success": True, "message": f"Test {req.type} briefing sent to {req.email}"}
+        return {"success": False, "message": "Failed to send (check RESEND_API_KEY)"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

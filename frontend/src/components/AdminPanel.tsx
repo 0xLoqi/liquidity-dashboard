@@ -8,6 +8,8 @@ import {
   getSubscribers,
   deleteSubscriber,
   getFeedback,
+  sendTestBriefing,
+  sendTestWelcome,
 } from "@/lib/api";
 
 export function AdminPanel() {
@@ -122,6 +124,12 @@ function AdminTabs({ token }: { token: string }) {
           Subscribers
         </Tabs.Trigger>
         <Tabs.Trigger
+          value="emails"
+          className="flex-1 py-2 text-xs font-medium text-muted/60 border-b-2 border-transparent transition-colors data-[state=active]:text-foreground data-[state=active]:border-accent"
+        >
+          Test Emails
+        </Tabs.Trigger>
+        <Tabs.Trigger
           value="feedback"
           className="flex-1 py-2 text-xs font-medium text-muted/60 border-b-2 border-transparent transition-colors data-[state=active]:text-foreground data-[state=active]:border-accent"
         >
@@ -130,6 +138,9 @@ function AdminTabs({ token }: { token: string }) {
       </Tabs.List>
       <Tabs.Content value="subscribers">
         <SubscribersTab token={token} />
+      </Tabs.Content>
+      <Tabs.Content value="emails">
+        <TestEmailsTab token={token} />
       </Tabs.Content>
       <Tabs.Content value="feedback">
         <FeedbackTab token={token} />
@@ -195,6 +206,74 @@ function SubscribersTab({ token }: { token: string }) {
           </button>
         </div>
       ))}
+    </div>
+  );
+}
+
+function TestEmailsTab({ token }: { token: string }) {
+  const [email, setEmail] = useState("");
+  const [sending, setSending] = useState<string | null>(null);
+  const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
+
+  const send = async (type: "welcome" | "daily" | "regime_change") => {
+    if (!email) return;
+    setSending(type);
+    setResult(null);
+    try {
+      let res;
+      if (type === "welcome") {
+        res = await sendTestWelcome(email, token);
+      } else {
+        res = await sendTestBriefing(email, type, token);
+      }
+      setResult(res);
+    } catch {
+      setResult({ success: false, message: "Request failed" });
+    }
+    setSending(null);
+  };
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <label className="text-xs text-muted/60 block mb-1.5">Recipient</label>
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className="w-full px-3 py-2 text-sm bg-surface-raised border border-border rounded-lg text-foreground focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/20 transition-colors"
+          placeholder="email@example.com"
+        />
+      </div>
+      <div className="space-y-2">
+        <p className="text-[10px] text-muted/40 uppercase tracking-wider font-semibold">Send test email</p>
+        <button
+          onClick={() => send("welcome")}
+          disabled={!email || sending !== null}
+          className="w-full py-2 text-xs font-medium bg-surface-raised border border-border rounded-lg text-foreground hover:border-accent/30 transition-colors disabled:opacity-40"
+        >
+          {sending === "welcome" ? "Sending..." : "Welcome Email"}
+        </button>
+        <button
+          onClick={() => send("daily")}
+          disabled={!email || sending !== null}
+          className="w-full py-2 text-xs font-medium bg-surface-raised border border-border rounded-lg text-foreground hover:border-accent/30 transition-colors disabled:opacity-40"
+        >
+          {sending === "daily" ? "Sending..." : "Daily Briefing (live data)"}
+        </button>
+        <button
+          onClick={() => send("regime_change")}
+          disabled={!email || sending !== null}
+          className="w-full py-2 text-xs font-medium bg-surface-raised border border-border rounded-lg text-foreground hover:border-accent/30 transition-colors disabled:opacity-40"
+        >
+          {sending === "regime_change" ? "Sending..." : "Regime Change Alert (live data)"}
+        </button>
+      </div>
+      {result && (
+        <p className={`text-xs ${result.success ? "text-bullish" : "text-bearish"}`}>
+          {result.message}
+        </p>
+      )}
     </div>
   );
 }
