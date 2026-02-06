@@ -11,7 +11,9 @@ from typing import Optional
 from dotenv import load_dotenv
 load_dotenv()
 
-from fastapi import FastAPI, HTTPException, Header
+import hashlib
+
+from fastapi import FastAPI, HTTPException, Header, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
@@ -50,6 +52,27 @@ app.add_middleware(
 )
 
 CACHE = CacheManager()
+ANALYTICS_SALT = os.environ.get("ANALYTICS_SALT", "flowstate-2026")
+
+
+@app.middleware("http")
+async def track_hits(request: Request, call_next):
+    """Log hits for analytics on API routes."""
+    response = await call_next(request)
+    path = request.url.path
+    if path.startswith("/api/") and not path.startswith("/api/admin"):
+        referrer = request.headers.get("referer", "")
+        ip = request.client.host if request.client else ""
+        visitor = hashlib.sha256(f"{ip}{ANALYTICS_SALT}".encode()).hexdigest()[:12] if ip else ""
+        utm_source = request.query_params.get("utm_source", "")
+        utm_campaign = request.query_params.get("utm_campaign", "")
+        try:
+            CACHE.log_hit(path, referrer, visitor, utm_source, utm_campaign)
+        except Exception:
+            pass
+    return response
+
+
 STATE_FILE = Path(__file__).parent / "regime_state.json"
 FEEDBACK_FILE = Path(__file__).parent / "feedback.json"
 SUBSCRIBERS_FILE = Path(__file__).parent / "subscribers.json"
@@ -476,6 +499,17 @@ async def send_test_briefing(req: TestBriefingRequest, authorization: Optional[s
         return {"success": False, "message": "Failed to send (check RESEND_API_KEY)"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/admin/analytics")
+async def get_analytics(
+    days: int = 7,
+    authorization: Optional[str] = Header(None),
+):
+    """Get hit analytics (admin only)."""
+    if not verify_admin(authorization):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    return CACHE.get_analytics(days=days)
 
 
 @app.post("/api/refresh")
