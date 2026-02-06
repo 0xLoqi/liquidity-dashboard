@@ -15,5 +15,5 @@ services:
       - key: ADMIN_TOKEN
         sync: false
       - key: FRONTEND_URL
-        value: https://flowstate-dashboard.vercel.app
+        value: https://www.flowstate.markets
     healthCheckPath: /docs
