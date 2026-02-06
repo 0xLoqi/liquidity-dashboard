@@ -23,13 +23,13 @@ def inject_og_meta():
     st.markdown("""
     <head>
         <meta property="og:title" content="FlowState - Crypto Liquidity Regime Tracker" />
-        <meta property="og:description" content="Track 5 macro liquidity indicators to know when crypto conditions favor risk-on vs playing defense. Free tool by Elijah Wilbanks." />
+        <meta property="og:description" content="Track 5 macro liquidity indicators and their historical relationship with crypto markets. Educational tool by Elijah Wilbanks." />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://flowstate.streamlit.app" />
         <meta property="og:image" content="https://flowstate.streamlit.app/og-image.png" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="FlowState - Crypto Liquidity Regime Tracker" />
-        <meta name="twitter:description" content="Track 5 macro liquidity indicators to know when crypto conditions favor risk-on vs playing defense." />
+        <meta name="twitter:description" content="Track 5 macro liquidity indicators and their historical relationship with crypto markets. Educational tool." />
     </head>
     """, unsafe_allow_html=True)
 
@@ -64,31 +64,31 @@ from config import CACHE_TTL, REGIME_THRESHOLDS, WEIGHTS
 
 REGIME_TAGLINES = {
     "aggressive": {
-        "plain": "Conditions are favorable for crypto right now",
-        "finance": "Liquidity conditions favor risk-on positioning",
+        "plain": "Liquidity indicators are mostly positive",
+        "finance": "Liquidity conditions are expansionary",
     },
     "balanced": {
-        "plain": "Mixed signals — be selective, don't go all-in",
-        "finance": "Mixed signals suggest selective exposure",
+        "plain": "Indicators are showing mixed signals",
+        "finance": "Mixed liquidity signals across metrics",
     },
     "defensive": {
-        "plain": "Warning signs suggest playing it safe",
-        "finance": "Liquidity headwinds warrant caution",
+        "plain": "Liquidity indicators are mostly negative",
+        "finance": "Liquidity conditions are contracting",
     },
 }
 
 REGIME_POSTURES = {
     "aggressive": {
-        "plain": "Good conditions for investing in crypto",
-        "finance": "Full risk-on appropriate. Consider max exposure to quality assets.",
+        "plain": "Similar conditions have historically preceded crypto rallies",
+        "finance": "Liquidity environment historically associated with risk asset strength",
     },
     "balanced": {
-        "plain": "Be picky about what you invest in",
-        "finance": "Neutral posture. Maintain moderate exposure, be selective.",
+        "plain": "Indicators are sending conflicting signals",
+        "finance": "Mixed liquidity signals across indicators",
     },
     "defensive": {
-        "plain": "Consider reducing exposure and holding cash",
-        "finance": "Risk-off posture. Reduce exposure, raise cash, avoid leverage.",
+        "plain": "Similar conditions have historically preceded crypto weakness",
+        "finance": "Liquidity environment historically associated with risk asset drawdowns",
     },
 }
 
@@ -584,13 +584,13 @@ Crypto markets are heavily influenced by global liquidity conditions. When there
 
 **The Three Regimes:**
 
-- 🚀 **Aggressive** — Multiple indicators are bullish AND Bitcoin is above its 200-day average. Conditions favor risk-taking.
+- 🚀 **Aggressive** — Multiple indicators are bullish AND Bitcoin is above its 200-day average. Historically associated with crypto strength.
 
-- ⚖️ **Balanced** — Mixed signals. Some indicators bullish, some bearish. Be selective with investments.
+- ⚖️ **Balanced** — Mixed signals. Some indicators bullish, some bearish. No clear directional bias.
 
-- 🛡️ **Defensive** — Multiple indicators are bearish. Consider reducing exposure and preserving capital.
+- 🛡️ **Defensive** — Multiple indicators are bearish. Historically associated with crypto weakness.
 
-**Not financial advice.** This is a framework for understanding macro conditions, not a trading signal.
+**This is not financial advice.** This tool is for educational purposes only — a framework for understanding macro conditions, not a trading signal. Past correlations do not guarantee future results.
         """)
 
     # ==========================================================================
@@ -633,7 +633,7 @@ Crypto markets are heavily influenced by global liquidity conditions. When there
 <span style="color: #3B82F6; font-weight: 600; letter-spacing: 1px; font-size: 10px; text-transform: uppercase;">FlowState</span>
 </div>
 Built by <a href="https://www.linkedin.com/in/elijah-wilbanks/" target="_blank" style="color: #3B82F6; text-decoration: none; font-weight: 500;">Elijah Wilbanks</a>&nbsp;&nbsp;|&nbsp;&nbsp;Sources: FRED • CoinGecko • DefiLlama&nbsp;&nbsp;|&nbsp;&nbsp;Updated: {timestamp}<br>
-<span style="color: #64748B; margin-top: 4px; display: inline-block;">Not financial advice. For educational purposes only.</span>
+<span style="color: #64748B; margin-top: 4px; display: inline-block;">For educational purposes only. Not financial advice. Past performance does not indicate future results.</span>
 </div>""", unsafe_allow_html=True)
 
 
