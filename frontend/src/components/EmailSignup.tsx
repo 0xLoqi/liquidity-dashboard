@@ -5,9 +5,10 @@ import { subscribe, fetchSpots } from "@/lib/api";
 
 interface EmailSignupProps {
   onSuccess?: () => void;
+  onSpotsChange?: (spots: number) => void;
 }
 
-export function EmailSignup({ onSuccess }: EmailSignupProps) {
+export function EmailSignup({ onSuccess, onSpotsChange }: EmailSignupProps) {
   const [email, setEmail] = useState("");
   const [cadence, setCadence] = useState("daily");
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
@@ -32,7 +33,10 @@ export function EmailSignup({ onSuccess }: EmailSignupProps) {
         setStatus("success");
         setMessage(res.message);
         setWaitlisted(!!res.waitlisted);
-        if (res.spots_remaining != null) setSpots(res.spots_remaining);
+        if (res.spots_remaining != null) {
+          setSpots(res.spots_remaining);
+          onSpotsChange?.(res.spots_remaining);
+        }
         setEmail("");
         setTimeout(() => onSuccess?.(), 2000);
       } else {
