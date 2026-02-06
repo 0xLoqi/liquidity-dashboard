@@ -15,6 +15,8 @@ import { MetricCard } from "@/components/MetricCard";
 import { BtcGate } from "@/components/BtcGate";
 import { TechDetails } from "@/components/TechDetails";
 import { LearnMore } from "@/components/LearnMore";
+import { BacktestData } from "@/components/BacktestData";
+import { FAQ } from "@/components/FAQ";
 import { ModeToggle } from "@/components/ModeToggle";
 import { Footer } from "@/components/Footer";
 
@@ -112,7 +114,7 @@ export default function Home() {
       />
 
       <div className="relative z-10 max-w-6xl mx-auto px-4 md:px-6 lg:px-8">
-        <Header onRefresh={refresh} />
+        <Header regime={regime} />
 
         {/* Mode toggle */}
         <div className="flex justify-center mb-6">
@@ -178,11 +180,13 @@ export default function Home() {
               thresholds={thresholds}
               totalScore={score}
             />
+            <BacktestData />
             <LearnMore />
+            <FAQ />
           </div>
         </div>
 
-        <Footer timestamp={timestamp} />
+        <Footer timestamp={timestamp} onRefresh={refresh} />
       </div>
     </div>
   );

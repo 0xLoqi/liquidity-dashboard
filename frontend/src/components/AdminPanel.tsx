@@ -12,7 +12,10 @@ import {
   sendTestWelcome,
 } from "@/lib/api";
 
-export function AdminPanel() {
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+export function AdminPanel({ onRefresh }: { onRefresh?: () => void }) {
   const [open, setOpen] = useState(false);
   const [token, setToken] = useState<string | null>(null);
   const [password, setPassword] = useState("");
@@ -104,7 +107,7 @@ export function AdminPanel() {
                   Logout
                 </button>
               </div>
-              <AdminTabs token={token} />
+              <AdminTabs token={token} onRefresh={onRefresh} />
             </div>
           )}
         </Dialog.Content>
@@ -113,7 +116,18 @@ export function AdminPanel() {
   );
 }
 
-function AdminTabs({ token }: { token: string }) {
+function AdminTabs({ token, onRefresh }: { token: string; onRefresh?: () => void }) {
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await fetch(`${API_URL}/api/refresh`, { method: "POST" });
+      onRefresh?.();
+    } catch { /* ignore */ }
+    setRefreshing(false);
+  };
+
   return (
     <Tabs.Root defaultValue="subscribers">
       <Tabs.List className="flex border-b border-border mb-4">
@@ -135,6 +149,12 @@ function AdminTabs({ token }: { token: string }) {
         >
           Feedback
         </Tabs.Trigger>
+        <Tabs.Trigger
+          value="tools"
+          className="flex-1 py-2 text-xs font-medium text-muted/60 border-b-2 border-transparent transition-colors data-[state=active]:text-foreground data-[state=active]:border-accent"
+        >
+          Tools
+        </Tabs.Trigger>
       </Tabs.List>
       <Tabs.Content value="subscribers">
         <SubscribersTab token={token} />
@@ -144,6 +164,17 @@ function AdminTabs({ token }: { token: string }) {
       </Tabs.Content>
       <Tabs.Content value="feedback">
         <FeedbackTab token={token} />
+      </Tabs.Content>
+      <Tabs.Content value="tools">
+        <div className="space-y-3">
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="w-full py-2 text-xs font-medium bg-surface-raised border border-border rounded-lg text-foreground hover:border-accent/30 transition-colors disabled:opacity-40"
+          >
+            {refreshing ? "Refreshing..." : "Force Refresh (clear cache + reload)"}
+          </button>
+        </div>
       </Tabs.Content>
     </Tabs.Root>
   );

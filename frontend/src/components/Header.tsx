@@ -5,7 +5,34 @@ import * as Popover from "@radix-ui/react-popover";
 import { EmailSignup } from "./EmailSignup";
 import { fetchSpots } from "@/lib/api";
 
-export function Header({ onRefresh }: { onRefresh?: () => void }) {
+function LiveDot({ regime }: { regime?: string }) {
+  const colorMap: Record<string, string> = {
+    aggressive: "#22C55E",
+    balanced: "#F59E0B",
+    defensive: "#EF4444",
+  };
+  const color = colorMap[regime ?? "balanced"] ?? "#F59E0B";
+
+  return (
+    <span className="flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest bg-white/5 border border-white/10 rounded-full">
+      <span className="relative flex h-2 w-2">
+        <span
+          className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-50"
+          style={{ backgroundColor: color }}
+        />
+        <span
+          className="relative inline-flex rounded-full h-2 w-2"
+          style={{ backgroundColor: color }}
+        />
+      </span>
+      <span style={{ color }} className="opacity-90">
+        Live
+      </span>
+    </span>
+  );
+}
+
+export function Header({ regime }: { regime?: string }) {
   const [open, setOpen] = useState(false);
   const [spots, setSpots] = useState<number | null>(null);
 
@@ -27,24 +54,10 @@ export function Header({ onRefresh }: { onRefresh?: () => void }) {
         >
           FlowState
         </h1>
-        <span className="px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-accent bg-accent/8 border border-accent/20 rounded-full">
-          Live
-        </span>
+        <LiveDot regime={regime} />
       </div>
 
       <div className="flex items-center gap-2">
-        {onRefresh && (
-          <button
-            onClick={onRefresh}
-            className="p-2 text-muted hover:text-foreground transition-colors rounded-lg hover:bg-surface-raised"
-            title="Refresh data"
-          >
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-              <path d="M1 1v5h5M15 15v-5h-5" />
-              <path d="M13.5 6A6 6 0 0 0 3 3.5L1 6M2.5 10A6 6 0 0 0 13 12.5L15 10" />
-            </svg>
-          </button>
-        )}
         <Popover.Root open={open} onOpenChange={setOpen}>
           <Popover.Trigger asChild>
             <button className="relative flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-accent bg-accent/8 border border-accent/20 rounded-lg hover:bg-accent/15 transition-colors">
