@@ -50,6 +50,8 @@ jobs:
           COINGECKO_API_KEY: ${{ secrets.COINGECKO_API_KEY }}
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
           DASHBOARD_URL: ${{ vars.DASHBOARD_URL }}
         run: |
           if [ "${{ steps.runtype.outputs.daily }}" = "true" ]; then
