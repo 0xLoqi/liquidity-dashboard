@@ -1,11 +1,10 @@
 {
   "current_regime": "balanced",
   "proposed_regime": "balanced",
-  "consecutive_days": 214,
+  "consecutive_days": 215,
   "last_score": 5.5,
   "regime_start_date": "2026-03-18T13:28:33.737043",
   "score_history": [
-    5.5,
     5.5,
     5.5,
     5.5,
@@ -23,6 +22,7 @@
     5.5,
     5.5,
     4.0,
+    5.5,
     5.5,
     5.5,
     5.5,
