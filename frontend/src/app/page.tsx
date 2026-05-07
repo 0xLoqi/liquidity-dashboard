@@ -23,7 +23,7 @@ import { Footer } from "@/components/Footer";
 const METRIC_ORDER = ["walcl", "rrp", "hy_spread", "dxy", "stablecoin"];
 
 export default function Home() {
-  const { dashboard, isLoading, isError, refresh } = useDashboard();
+  const { dashboard, isLoading, isRefreshing, isError, refresh } = useDashboard();
   const [disclaimerDismissed, setDisclaimerDismissed, hydrated] = useLocalStorage(
     "disclaimer_dismissed",
     false
@@ -48,7 +48,7 @@ export default function Home() {
     );
   }
 
-  // Loading state
+  // Loading state — only shown on first visit (no cached data yet).
   if (isLoading && !dashboard) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -57,13 +57,12 @@ export default function Home() {
             🌊
           </div>
           <p className="text-sm text-muted">Loading FlowState...</p>
-          <p className="text-xs text-muted/60 mt-2">First load can take up to 30 seconds while the backend wakes up.</p>
         </div>
       </div>
     );
   }
 
-  // Error state
+  // Error state — only shown on first visit with no cached data.
   if (isError && !dashboard) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -187,7 +186,7 @@ export default function Home() {
           </div>
         </div>
 
-        <Footer timestamp={timestamp} onRefresh={refresh} />
+        <Footer timestamp={timestamp} onRefresh={refresh} isRefreshing={isRefreshing} />
       </div>
     </div>
   );
