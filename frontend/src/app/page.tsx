@@ -57,6 +57,7 @@ export default function Home() {
             🌊
           </div>
           <p className="text-sm text-muted">Loading FlowState...</p>
+          <p className="text-xs text-muted/60 mt-2">First load can take up to 30 seconds while the backend wakes up.</p>
         </div>
       </div>
     );
