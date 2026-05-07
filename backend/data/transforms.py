@@ -242,7 +242,13 @@ def get_chart_data(data: Dict[str, Any], days: int = 90) -> Dict[str, pd.DataFra
     for name in ["WALCL", "RRPONTSYD", "BAMLH0A0HYM2", "DTWEXBGS"]:
         df = data.get("fred", {}).get(name)
         if df is not None and len(df) > 0:
-            df_recent = df[df["date"] >= cutoff].copy()
+            df_chart = df.copy()
+            # RRP spikes hard at quarter/month-end from balance-sheet window-dressing.
+            # Smooth the chart with a 7-day rolling mean so the trend is readable.
+            # The regime score uses a 28-day delta and is unaffected.
+            if name == "RRPONTSYD":
+                df_chart["value"] = df_chart["value"].rolling(window=7, min_periods=1).mean()
+            df_recent = df_chart[df_chart["date"] >= cutoff].copy()
             charts[name.lower()] = df_recent
 
     # BTC
