@@ -25,8 +25,8 @@ def inject_og_meta():
         <meta property="og:title" content="FlowState - Crypto Liquidity Regime Tracker" />
         <meta property="og:description" content="Track 5 macro liquidity indicators and their historical relationship with crypto markets. Educational tool by Elijah Wilbanks." />
         <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://flowstate.streamlit.app" />
-        <meta property="og:image" content="https://flowstate.streamlit.app/og-image.png" />
+        <meta property="og:url" content="https://flowstate.markets" />
+        <meta property="og:image" content="https://flowstate.markets/og-image.png" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="FlowState - Crypto Liquidity Regime Tracker" />
         <meta name="twitter:description" content="Track 5 macro liquidity indicators and their historical relationship with crypto markets. Educational tool." />
