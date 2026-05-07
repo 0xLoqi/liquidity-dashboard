@@ -121,7 +121,7 @@ def create_regime_embed(cache_data, include_signals=True):
     btc_vs = "above" if btc_above else "below"
     embed.add_field(name="BTC", value=f"**{btc_str}** ({btc_vs} {btc_ma_str} MA)", inline=True)
 
-    dashboard_url = os.environ.get("DASHBOARD_URL", "https://flowstate.streamlit.app")
+    dashboard_url = os.environ.get("DASHBOARD_URL", "https://flowstate.markets")
     embed.add_field(name="Learn More", value=f"[Dashboard]({dashboard_url})", inline=True)
 
     if include_signals:
@@ -249,7 +249,7 @@ async def explain_command(interaction: discord.Interaction):
         inline=False
     )
 
-    dashboard_url = os.environ.get("DASHBOARD_URL", "https://flowstate.streamlit.app")
+    dashboard_url = os.environ.get("DASHBOARD_URL", "https://flowstate.markets")
     embed.add_field(name="Full Dashboard", value=f"[Open]({dashboard_url})", inline=False)
     embed.set_footer(text="Not financial advice")
 
@@ -290,7 +290,7 @@ async def check_regime_changes():
                 timestamp=datetime.utcnow()
             )
 
-            dashboard_url = os.environ.get("DASHBOARD_URL", "https://flowstate.streamlit.app")
+            dashboard_url = os.environ.get("DASHBOARD_URL", "https://flowstate.markets")
             embed.add_field(name="Learn More", value=f"[Open Dashboard]({dashboard_url})", inline=False)
             embed.set_footer(text="FlowState Alert")
 

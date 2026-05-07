@@ -56,7 +56,7 @@ def send_daily_briefing(
     metric_lines = []
     for name, data in scores.get("individual", {}).items():
         sig = data.get("score", 0)
-        icon = "🟢" if sig > 0 else "🔴" if sig < 0 else "⚪"
+        icon = "🟢" if sig > 0 else "🔴" if sig < 0 else "🟡"
         friendly_name = METRIC_NAMES.get(name, name.replace("_", " ").title())
         metric_lines.append(f"{icon} {friendly_name}")
 
