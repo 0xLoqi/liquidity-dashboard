@@ -73,15 +73,22 @@ def run_briefing(daily: bool = True, check_change: bool = True):
     # Check for regime change
     if regime_changed:
         print(f"ALERT: Regime changed from {previous_regime} to {regime}!")
-        success = send_regime_change_alert(
-            webhook_url=webhook_url,
-            old_regime=previous_regime,
-            new_regime=regime,
-            score=total_score,
-            dashboard_url=dashboard_url,
-            btc_price=btc_price,
-        )
-        if success:
+        # Repo variable MUTE_REGIME_ALERTS=true skips the Discord ping; state still updates
+        if os.environ.get("MUTE_REGIME_ALERTS", "").lower() == "true":
+            print("[MUTED] Regime change Discord alert skipped (MUTE_REGIME_ALERTS=true)")
+            success = None
+        else:
+            success = send_regime_change_alert(
+                webhook_url=webhook_url,
+                old_regime=previous_regime,
+                new_regime=regime,
+                score=total_score,
+                dashboard_url=dashboard_url,
+                btc_price=btc_price,
+            )
+        if success is None:
+            pass
+        elif success:
             print("[OK] Regime change alert sent to Discord!")
         else:
             print("[FAIL] Failed to send regime change alert to Discord")
