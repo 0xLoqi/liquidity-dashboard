@@ -1,11 +1,10 @@
 {
   "current_regime": "defensive",
   "proposed_regime": "defensive",
-  "consecutive_days": 2,
+  "consecutive_days": 3,
   "last_score": -4.0,
   "regime_start_date": "2026-09-29T23:15:10.474912",
   "score_history": [
-    0.5,
     -2.5,
     -2.5,
     -2.5,
@@ -31,6 +30,7 @@
     -1.0,
     -1.0,
     -1.0,
+    -4.0,
     -4.0,
     -4.0,
     -4.0,
