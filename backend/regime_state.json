@@ -1,9 +1,9 @@
 {
-  "current_regime": "defensive",
-  "proposed_regime": "defensive",
-  "consecutive_days": 4,
-  "last_score": -4.0,
-  "regime_start_date": "2026-10-15T22:44:36.305346",
+  "current_regime": "balanced",
+  "proposed_regime": "balanced",
+  "consecutive_days": 0,
+  "last_score": -1.0,
+  "regime_start_date": "2026-10-16T19:05:56.606959",
   "score_history": [
     -1.0,
     -1.0,
@@ -28,12 +28,12 @@
     -1.0,
     -1.0,
     -1.0,
-    -1.0,
     -4.0,
     -4.0,
     -4.0,
     -4.0,
     -4.0,
-    -4.0
+    -4.0,
+    -1.0
   ]
 }
